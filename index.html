@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clínica Escola UNINASSAU - Gestão Clínica Veterinária</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --paper: #f6f5f2;
+            --surface: #ffffff;
+            --ink: #18222f;
+            --muted: #5c6672;
+            --line: #e2dfd7;
+            --navy: #0c2d52;
+            --ochre: #e5a918;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        html, body, button, input, select, textarea, table, .btn, .form-control, .form-select, .modal, .card, .alert, .badge {
+            font-family: var(--font-sans) !important;
+        }
+        body {
+            background-color: var(--paper);
+            color: var(--ink);
+        }
+        h1, h2, h3, h4, h5, h6, .display-title {
+            font-family: var(--font-sans) !important;
+            letter-spacing: -0.02em;
+        }
+        .brand-heading {
+            color: var(--navy);
+        }
+        .site-header {
+            background-color: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--line);
+        }
+        .home-intro {
+            background-color: var(--surface);
+            border: 1px solid var(--line);
+            border-left: 4px solid var(--navy);
+            border-radius: 20px;
+        }
+        .btn {
+            border-radius: 14px;
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+        .btn-sm {
+            border-radius: 12px;
+            padding: 0.4rem 0.85rem;
+        }
+        .btn-navy {
+            background-color: var(--navy);
+            color: #ffffff;
+            border: 1px solid var(--navy);
+            font-weight: 500;
+        }
+        .btn-navy:hover {
+            background-color: #081e38;
+            border-color: #081e38;
+            color: #ffffff;
+        }
+        .btn-accent {
+            background-color: var(--ochre);
+            color: #18222f;
+            border: 1px solid var(--ochre);
+            font-weight: 600;
+        }
+        .btn-accent:hover {
+            background-color: #cf960f;
+            border-color: #cf960f;
+            color: #18222f;
+        }
+        .card, .modal-content, .form-control, .form-select, .alert {
+            border-radius: 16px;
+            border-color: var(--line);
+        }
+        .role-choice-btn {
+            border-radius: 14px;
+            padding: 0.85rem 1rem;
+            border-color: var(--line);
+        }
+        .role-choice-btn:hover {
+            border-color: var(--navy);
+            background-color: #f9fafb;
+        }
+    </style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+    <!-- NAVBAR -->
+    <header class="navbar navbar-expand-md navbar-light site-header sticky-top py-2">
+        <div class="container">
+            <a href="#" class="navbar-brand d-flex align-items-center gap-2" onclick="switchTab('home'); return false;">
+                <img src="logo-clinica.png" alt="Logo Clínica" style="height: 38px; width: auto;" class="object-fit-contain">
+                <div class="lh-sm">
+                    <span class="fw-bold d-block" style="color: var(--navy);">Clínica Escola</span>
+                    <small class="text-muted" style="font-size: 0.74rem;">UNINASSAU · Campina Grande</small>
+                </div>
+            </a>
+
+            <button class="navbar-toggler rounded-3" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Alternar navegação">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="mainNavbar">
+                <ul class="navbar-nav me-auto mb-2 mb-md-0 gap-1">
+                    <li class="nav-item">
+                        <button type="button" onclick="switchTab('home')" id="nav-home" class="nav-btn btn btn-sm btn-light active fw-semibold">Início</button>
+                    </li>
+                    <li class="nav-item">
+                        <button type="button" onclick="switchTab('animals')" id="nav-animals" class="nav-btn btn btn-sm btn-light">Área do Animal</button>
+                    </li>
+                    <li class="nav-item">
+                        <button type="button" onclick="switchTab('tutor-area')" id="nav-tutor-area" class="nav-btn btn btn-sm btn-light d-none">Minha Conta (Tutor)</button>
+                    </li>
+                    <li class="nav-item">
+                        <button type="button" onclick="switchTab('appointments')" id="nav-appointments" class="nav-btn btn btn-sm btn-light">Consultas</button>
+                    </li>
+                    <li class="nav-item">
+                        <button type="button" onclick="switchTab('clinics')" id="nav-clinics" class="nav-btn btn btn-sm btn-light">Clínicas Parceiras</button>
+                    </li>
+                </ul>
+
+                <div id="auth-nav-area" class="d-flex align-items-center gap-2">
+                    <button type="button" onclick="openModal('login-select-modal')" class="btn btn-sm btn-outline-secondary rounded-pill">Entrar</button>
+                    <button type="button" onclick="openModal('signup-select-modal')" class="btn btn-sm btn-accent rounded-pill">Cadastrar</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="flex-grow-1 container py-4 py-md-5">
+
+        <!-- TAB 1: HOME -->
+        <section id="tab-home" class="tab-content">
+            <div class="home-intro p-4 p-md-5 mb-4">
+                <div class="row align-items-center g-4">
+                    <div class="col-lg-8">
+                        <span class="badge rounded-pill text-bg-light border px-3 py-2 mb-3 text-secondary">
+                            UNINASSAU · Campina Grande
+                        </span>
+                        <h1 class="brand-heading display-5 fw-bold mb-2">Gestão Clínica Veterinária</h1>
+                        <p class="text-secondary mb-4">
+                            Registro de pets, busca de doadores e controle de consultas.
+                        </p>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="button" onclick="switchTab('animals')" class="btn btn-navy rounded-pill">
+                                Ver Doadores
+                            </button>
+                            <button type="button" onclick="openModal('signup-select-modal')" class="btn btn-outline-secondary rounded-pill">
+                                Criar Conta
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="p-4 rounded-4 bg-light border">
+                            <div class="small text-uppercase fw-semibold text-secondary mb-1">Atendimento</div>
+                            <div class="fw-bold">Seg a Sex · 08h às 17h</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="card h-100 bg-white">
+                        <div class="card-body p-4">
+                            <div class="small fw-semibold text-secondary mb-1">Tutores</div>
+                            <h5 class="card-title fw-bold mb-2">Pets e Consultas</h5>
+                            <p class="card-text text-muted small mb-0">Cadastre seus pets, anexe anamneses e acompanhe agendamentos.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 bg-white">
+                        <div class="card-body p-4">
+                            <div class="small fw-semibold text-secondary mb-1">Clínicas Parceiras</div>
+                            <h5 class="card-title fw-bold mb-2">Busca de Doadores</h5>
+                            <p class="card-text text-muted small mb-0">Filtre por tipo sanguíneo, idade ou peso e solicite doadores.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 bg-white">
+                        <div class="card-body p-4">
+                            <div class="small fw-semibold text-secondary mb-1">Coordenação</div>
+                            <h5 class="card-title fw-bold mb-2">Controle Clínico</h5>
+                            <p class="card-text text-muted small mb-0">Gerencie animais, consultas e clínicas credenciadas.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: ANIMAIS E DOADORES -->
+        <section id="tab-animals" class="tab-content d-none">
+            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4">
+                <div>
+                    <h2 class="h3 fw-bold mb-1">Área Geral do Animal & Doadores</h2>
+                    <p class="text-muted small mb-0">Consulte informações clínicas e doadores conforme o perfil.</p>
+                </div>
+                <div style="min-width: 260px;">
+                    <input type="text" id="animal-search" oninput="renderAnimals()" placeholder="Pesquisar por nome, espécie ou tutor..." class="form-control form-control-sm">
+                </div>
+            </div>
+
+            <div id="tutor-restricted-banner" class="alert alert-warning d-none small">
+                <strong>Acesso restrito:</strong> Tutores gerenciam seus pets exclusivamente na aba <strong>Minha Conta (Tutor)</strong>.
+                <button type="button" onclick="switchTab('tutor-area')" class="btn btn-sm btn-warning rounded-pill ms-2">Ir para Minha Conta</button>
+            </div>
+
+            <div id="clinic-filters-panel" class="card mb-4 d-none bg-white">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="badge rounded-pill text-bg-light border text-dark px-3 py-2">Filtros da Clínica Parceira</span>
+                        <button type="button" onclick="clearClinicFilters()" class="btn btn-sm btn-link text-danger p-0 text-decoration-none">Limpar Filtros</button>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-sm-4">
+                            <label class="form-label small fw-semibold">Tipo Sanguíneo</label>
+                            <select id="clinic-filter-blood" onchange="renderAnimals()" class="form-select form-select-sm">
+                                <option value="">Todos os Tipos Sanguíneos</option>
+                                <option value="DEA 1.1 Positivo">DEA 1.1 Positivo</option>
+                                <option value="DEA 1.1 Negativo">DEA 1.1 Negativo</option>
+                                <option value="DEA 4 Negativo">DEA 4 Negativo</option>
+                                <option value="Tipo A">Tipo A (Felino)</option>
+                                <option value="Tipo B">Tipo B (Felino)</option>
+                            </select>
+                        </div>
+                        <div class="col-sm-4">
+                            <label class="form-label small fw-semibold">Idade</label>
+                            <input type="text" id="clinic-filter-age" oninput="renderAnimals()" placeholder="Pesquisar idade..." class="form-control form-control-sm">
+                        </div>
+                        <div class="col-sm-4">
+                            <label class="form-label small fw-semibold">Peso</label>
+                            <input type="text" id="clinic-filter-weight" oninput="renderAnimals()" placeholder="Pesquisar peso..." class="form-control form-control-sm">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tutor-notice-banner" class="alert alert-light border d-flex justify-content-between align-items-center small">
+                <span>Faça login para acessar as áreas protegidas do sistema.</span>
+                <button type="button" onclick="openModal('login-select-modal')" class="btn btn-sm btn-navy rounded-pill">Entrar</button>
+            </div>
+
+            <div id="animals-grid" class="row g-3"></div>
+        </section>
+
+        <!-- TAB EXCLUSIVA TUTOR -->
+        <section id="tab-tutor-area" class="tab-content d-none">
+            <div class="card mb-4 bg-white">
+                <div class="card-body p-4 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
+                    <div>
+                        <span class="badge rounded-pill text-bg-light border text-secondary px-3 py-1 mb-1">Painel do Tutor</span>
+                        <h2 id="tutor-profile-name" class="h4 fw-bold mb-0">Nome do Tutor</h2>
+                        <small id="tutor-profile-email" class="text-muted">tutor@email.com</small>
+                    </div>
+                    <button type="button" onclick="openAnimalModal()" class="btn btn-sm btn-navy rounded-pill">
+                        <i class="fa-solid fa-plus me-1"></i> Cadastrar Novo Pet
+                    </button>
+                </div>
+            </div>
+
+            <div class="card mb-4 bg-white">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                    <span class="fw-bold small"><i class="fa-solid fa-bell text-danger me-1"></i> Notificações de Consultas</span>
+                    <button type="button" onclick="clearTutorNotifications()" class="btn btn-sm btn-outline-secondary rounded-pill">Limpar</button>
+                </div>
+                <div id="tutor-notifications-list" class="list-group list-group-flush small"></div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="h5 fw-bold mb-0">Meus Pets Cadastrados</h3>
+                <span id="tutor-pets-count" class="badge rounded-pill text-bg-secondary px-3 py-1">0 pets</span>
+            </div>
+
+            <div id="tutor-pets-grid" class="row g-3"></div>
+        </section>
+
+        <!-- TAB 3: CONSULTAS -->
+        <section id="tab-appointments" class="tab-content d-none">
+            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4">
+                <div>
+                    <h2 class="h3 fw-bold mb-1">Consultas Clínicas</h2>
+                    <p class="text-muted small mb-0">Gerencie atendimentos (intervalo mínimo de 15 min), reagendamentos e cancelamentos.</p>
+                </div>
+                <button type="button" id="btn-new-appointment" onclick="openAppointmentModal()" class="btn btn-sm btn-navy rounded-pill">
+                    <i class="fa-solid fa-calendar-plus me-1"></i> Agendar Consulta
+                </button>
+            </div>
+
+            <div class="card bg-white overflow-hidden">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 small">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Animal</th>
+                                <th>Tutor</th>
+                                <th>Serviço / Motivo</th>
+                                <th>Data e Hora</th>
+                                <th>Status</th>
+                                <th class="text-end">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="appointments-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: CLÍNICAS PARCEIRAS -->
+        <section id="tab-clinics" class="tab-content d-none">
+            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4">
+                <div>
+                    <h2 class="h3 fw-bold mb-1">Clínicas Parceiras</h2>
+                    <p class="text-muted small mb-0">Rede de clínicas para requisição de doadores e transferências.</p>
+                </div>
+                <button type="button" id="btn-new-clinic" onclick="openModal('clinic-signup-modal')" class="btn btn-sm btn-navy rounded-pill d-none">
+                    <i class="fa-solid fa-hospital me-1"></i> Cadastrar Clínica
+                </button>
+            </div>
+
+            <div id="clinic-portal-box" class="card mb-4 d-none bg-white">
+                <div class="card-body p-4">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 pb-3 mb-3 border-bottom">
+                        <div>
+                            <span class="badge rounded-pill text-bg-light border text-secondary px-3 py-1 mb-1">Portal da Clínica Parceira</span>
+                            <h3 id="logged-clinic-name" class="h5 fw-bold mb-0">Clínica Parceira</h3>
+                            <small id="logged-clinic-info" class="text-muted">Visualização de Doadores e Requisições</small>
+                        </div>
+                        <button type="button" onclick="openClinicContactModal()" class="btn btn-sm btn-accent rounded-pill">
+                            <i class="fa-solid fa-paper-plane me-1"></i> Requisitar Doadores
+                        </button>
+                    </div>
+                    <h6 class="fw-bold small text-uppercase text-muted mb-2">Requisições Enviadas</h6>
+                    <div id="clinic-requests-list" class="d-flex flex-column gap-2"></div>
+                </div>
+            </div>
+
+            <div id="clinics-grid" class="row g-3"></div>
+        </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-white border-top py-3 mt-auto">
+        <div class="container d-flex justify-content-between align-items-center small text-muted">
+            <span>&copy; 2026 UNINASSAU · Campina Grande</span>
+            <span>Gestão Clínica Veterinária</span>
+        </div>
+    </footer>
+
+    <!-- MODAL: SELEÇÃO DE LOGIN -->
+    <div class="modal fade" id="login-select-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content shadow-lg bg-white">
+                <div class="modal-header px-4 pt-4 pb-2 border-0">
+                    <div>
+                        <h5 class="modal-title fw-bold mb-1">Acessar o Sistema</h5>
+                        <p class="text-muted small mb-0">Selecione o perfil que deseja utilizar para entrar.</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body px-4 pb-4 pt-2 d-grid gap-3">
+                    <button type="button" onclick="closeModal('login-select-modal'); openLoginModalForRole('tutor')" class="btn btn-outline-secondary text-dark text-start role-choice-btn d-flex align-items-center gap-3">
+                        <span class="bg-light border text-dark rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                            <i class="fa-solid fa-user"></i>
+                        </span>
+                        <div>
+                            <div class="fw-bold">Tutor</div>
+                            <small class="text-muted">Gerencie seus pets, consultas e notificações.</small>
+                        </div>
+                    </button>
+                    <button type="button" onclick="closeModal('login-select-modal'); openLoginModalForRole('admin')" class="btn btn-outline-secondary text-dark text-start role-choice-btn d-flex align-items-center gap-3">
+                        <span class="bg-light border text-dark rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                            <i class="fa-solid fa-user-doctor"></i>
+                        </span>
+                        <div>
+                            <div class="fw-bold">Coordenação / Veterinário</div>
+                            <small class="text-muted">Acompanhe animais, consultas e clínicas parceiras.</small>
+                        </div>
+                    </button>
+                    <button type="button" onclick="closeModal('login-select-modal'); openLoginModalForRole('clinic')" class="btn btn-outline-secondary text-dark text-start role-choice-btn d-flex align-items-center gap-3">
+                        <span class="bg-light border text-dark rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                            <i class="fa-solid fa-hospital"></i>
+                        </span>
+                        <div>
+                            <div class="fw-bold">Clínica Parceira</div>
+                            <small class="text-muted">Filtre doadores e envie requisições de bolsas/sangue.</small>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: SELEÇÃO DE CADASTRO -->
+    <div class="modal fade" id="signup-select-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content shadow-lg bg-white">
+                <div class="modal-header px-4 pt-4 pb-2 border-0">
+                    <div>
+                        <h5 class="modal-title fw-bold mb-1">Criar Conta</h5>
+                        <p class="text-muted small mb-0">Escolha o tipo de cadastro para começar.</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body px-4 pb-4 pt-2 d-grid gap-3">
+                    <button type="button" onclick="closeModal('signup-select-modal'); openModal('signup-modal')" class="btn btn-outline-secondary text-dark text-start role-choice-btn d-flex align-items-center gap-3">
+                        <span class="bg-light border text-dark rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                            <i class="fa-solid fa-user"></i>
+                        </span>
+                        <div>
+                            <div class="fw-bold">Sou Tutor</div>
+                            <small class="text-muted">Cadastre seus pets e agende atendimentos.</small>
+                        </div>
+                    </button>
+                    <button type="button" onclick="closeModal('signup-select-modal'); openModal('admin-signup-modal')" class="btn btn-outline-secondary text-dark text-start role-choice-btn d-flex align-items-center gap-3">
+                        <span class="bg-light border text-dark rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                            <i class="fa-solid fa-user-tie"></i>
+                        </span>
+                        <div>
+                            <div class="fw-bold">Cadastro Institucional</div>
+                            <small class="text-muted">Coordenação e corpo médico veterinário.</small>
+                        </div>
+                    </button>
+                    <button type="button" onclick="closeModal('signup-select-modal'); openModal('clinic-signup-modal')" class="btn btn-outline-secondary text-dark text-start role-choice-btn d-flex align-items-center gap-3">
+                        <span class="bg-light border text-dark rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                            <i class="fa-solid fa-hospital"></i>
+                        </span>
+                        <div>
+                            <div class="fw-bold">Sou Clínica Parceira</div>
+                            <small class="text-muted">Credencie sua clínica para requisitar doadores.</small>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: LOGIN -->
+    <div class="modal fade" id="login-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content shadow-lg bg-white">
+                <div class="modal-header px-4 pt-4 pb-2 border-0">
+                    <div>
+                        <h5 id="login-modal-title" class="modal-title fw-bold mb-1">Entrar no Sistema</h5>
+                        <p class="text-muted small mb-0">Informe seu e-mail e senha cadastrados.</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <form onsubmit="handleLogin(event)" class="modal-body px-4 pb-4 pt-2">
+                    <input type="hidden" id="login-target-role">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">E-mail</label>
+                        <input type="email" id="login-email" required class="form-control">
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label small fw-semibold">Senha</label>
+                        <input type="password" id="login-password" required class="form-control">
+                    </div>
+                    <button type="submit" class="btn btn-navy w-100 rounded-pill py-2 fw-semibold">Entrar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CADASTRO TUTOR -->
+    <div class="modal fade" id="signup-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content shadow-lg bg-white">
+                <div class="modal-header px-4 pt-4 pb-2 border-0">
+                    <div>
+                        <h5 class="modal-title fw-bold mb-1">Cadastro de Tutor</h5>
+                        <p class="text-muted small mb-0">Preencha seus dados para criar sua conta.</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <form id="signup-form-step1" onsubmit="registerTutorDirect(event)" class="modal-body px-4 pb-4 pt-2">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Nome Completo</label>
+                        <input type="text" id="signup-name" required class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">E-mail</label>
+                        <input type="email" id="signup-email" required class="form-control">
+                    </div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-sm-6">
+                            <label class="form-label small fw-semibold">Senha</label>
+                            <input type="password" id="signup-password" required class="form-control">
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label small fw-semibold">Confirmar Senha</label>
+                            <input type="password" id="signup-confirm-password" required class="form-control">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-navy w-100 rounded-pill py-2 fw-semibold">Concluir Cadastro</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CADASTRO INSTITUCIONAL -->
+    <div class="modal fade" id="admin-signup-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content shadow-lg bg-white">
+                <div class="modal-header px-4 pt-4 pb-2 border-0">
+                    <div>
+                        <h5 class="modal-title fw-bold mb-1">Cadastro Institucional</h5>
+                        <p class="text-muted small mb-0">Acesso para coordenação e médicos veterinários.</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <form id="admin-signup-form-step1" onsubmit="registerAdminDirect(event)" class="modal-body px-4 pb-4 pt-2">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Nome / Médico Veterinário</label>
+                        <input type="text" id="admin-signup-name" required class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">E-mail Institucional</label>
+                        <input type="email" id="admin-signup-email" required class="form-control">
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label small fw-semibold">Senha</label>
+                        <input type="password" id="admin-signup-password" required class="form-control">
+                    </div>
+                    <button type="submit" class="btn btn-navy w-100 rounded-pill py-2 fw-semibold">Concluir Cadastro</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CADASTRO CLÍNICA -->
+    <div class="modal fade" id="clinic-signup-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content shadow-lg bg-white">
+                <div class="modal-header px-4 pt-4 pb-2 border-0">
+                    <div>
+                        <h5 class="modal-title fw-bold mb-1">Cadastro de Clínica Parceira</h5>
+                        <p class="text-muted small mb-0">Informe os dados da clínica ou hospital veterinário.</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <form id="clinic-signup-form-step1" onsubmit="registerClinicDirect(event)" class="modal-body px-4 pb-4 pt-2">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Nome da Clínica / Hospital</label>
+                        <input type="text" id="cs-name" required class="form-control">
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">CNPJ</label>
+                            <input type="text" id="cs-cnpj" required class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">CRMV Responsável</label>
+                            <input type="text" id="cs-crmv" required class="form-control">
+                        </div>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">E-mail</label>
+                            <input type="email" id="cs-email" required class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Telefone</label>
+                            <input type="text" id="cs-phone" required class="form-control">
+                        </div>
+                    </div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-7">
+                            <label class="form-label small fw-semibold">Endereço</label>
+                            <input type="text" id="cs-address" required class="form-control">
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small fw-semibold">Senha</label>
+                            <input type="password" id="cs-password" required class="form-control">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-navy w-100 rounded-pill py-2 fw-semibold">Concluir Cadastro</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: FORMULÁRIO DO ANIMAL -->
+    <div class="modal fade" id="animal-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-md modal-dialog-scrollable">
+            <div class="modal-content shadow-lg bg-white">
+                <div class="modal-header px-4 pt-3 pb-2 border-0">
+                    <h5 id="animal-modal-title" class="modal-title fw-bold">Cadastrar Animal</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <form onsubmit="saveAnimal(event)" class="modal-body px-4 pb-4 pt-2">
+                    <input type="hidden" id="animal-id">
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">Nome do Pet</label>
+                        <input type="text" id="animal-name" required class="form-control form-control-sm">
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Espécie</label>
+                            <select id="animal-species" class="form-select form-select-sm">
+                                <option value="Canino">Canino</option>
+                                <option value="Felino">Felino</option>
+                                <option value="Outros">Outros</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Raça</label>
+                            <input type="text" id="animal-breed" required class="form-control form-control-sm">
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold">Tipo Sanguíneo</label>
+                            <select id="animal-blood" required class="form-select form-select-sm">
+                                <option value="" selected disabled>Selecione o tipo sanguíneo</option>
+                                <option value="DEA 1.1 Positivo">DEA 1.1 Positivo</option>
+                                <option value="DEA 1.1 Negativo">DEA 1.1 Negativo</option>
+                                <option value="DEA 4 Negativo">DEA 4 Negativo</option>
+                                <option value="Tipo A">Tipo A (Felino)</option>
+                                <option value="Tipo B">Tipo B (Felino)</option>
+                                <option value="Não informado">Não informado</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Idade</label>
+                            <input type="text" id="animal-age" required class="form-control form-control-sm">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Peso</label>
+                            <input type="text" id="animal-weight" required class="form-control form-control-sm">
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Última Coleta</label>
+                            <input type="date" id="animal-last-collection" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Volume Doado</label>
+                            <input type="text" id="animal-donated-amount" class="form-control form-control-sm">
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">Tutor Responsável</label>
+                        <input type="text" id="animal-owner" required readonly class="form-control form-control-sm bg-light">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">Foto do Pet</label>
+                        <input type="file" id="animal-photo-file" accept="image/*" class="form-control form-control-sm">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">Histórico Clínico</label>
+                        <textarea id="animal-notes" rows="2" class="form-control form-control-sm"></textarea>
+                    </div>
+                    <div class="p-3 bg-light border rounded-3 mb-3">
+                        <label class="form-label small fw-semibold mb-1">
+                            <i class="fa-solid fa-file-pdf text-danger me-1"></i> Anamnese (PDF)
+                        </label>
+                        <input type="file" id="animal-pdf-file" accept="application/pdf" class="form-control form-control-sm">
+                        <small id="current-pdf-status" class="text-muted d-block mt-1">Opcional no cadastro do pet.</small>
+                    </div>
+                    <button type="submit" class="btn btn-navy w-100 rounded-pill py-2 fw-semibold">Salvar Pet</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CONSULTA -->
+    <div class="modal fade" id="appointment-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content shadow-lg bg-white">
+                <div class="modal-header px-4 pt-3 pb-2 border-0">
+                    <div>
+                        <h5 id="appt-modal-title" class="modal-title fw-bold mb-0">Agendar Consulta</h5>
+                        <small class="text-muted">Intervalo mínimo de 15 minutos entre consultas.</small>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <form onsubmit="saveAppointment(event)" class="modal-body px-4 pb-4 pt-2">
+                    <input type="hidden" id="appt-id">
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">Pet</label>
+                        <select id="appt-animal-select" required class="form-select form-select-sm"></select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">Tutor</label>
+                        <input type="text" id="appt-owner" required readonly class="form-control form-control-sm bg-light">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">Serviço</label>
+                        <input type="text" id="appt-service" required class="form-control form-control-sm">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">Data e Horário</label>
+                        <input type="datetime-local" id="appt-date" required onchange="checkAvailabilityNotice()" class="form-control form-control-sm">
+                    </div>
+                    <div id="availability-notice" class="d-none small mb-3"></div>
+                    <button type="submit" id="appt-submit-btn" class="btn btn-navy w-100 rounded-pill py-2 fw-semibold">Confirmar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: REQUISIÇÃO DA CLÍNICA -->
+    <div class="modal fade" id="clinic-contact-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content shadow-lg bg-white">
+                <div class="modal-header px-4 pt-3 pb-2 border-0">
+                    <h5 class="modal-title fw-bold">Requisição de Doador</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <form onsubmit="submitClinicContact(event)" class="modal-body px-4 pb-4 pt-2">
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">Animal Associado</label>
+                        <select id="cc-animal-select" required class="form-select form-select-sm"></select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-semibold">Assunto</label>
+                        <input type="text" id="cc-subject" required class="form-control form-control-sm">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Mensagem</label>
+                        <textarea id="cc-message" rows="3" required class="form-control form-control-sm"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-navy w-100 rounded-pill py-2 fw-semibold">Enviar Requisição</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
