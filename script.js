@@ -58,6 +58,12 @@ let clinicsData = JSON.parse(localStorage.getItem('vet_clinics')) || [
     { id: 2, name: 'Clínica Veterinária PetLife CG', crmv: 'CRMV-PB 458', email: 'contato@petlifecg.com', phone: '(83) 3333-4455', address: 'R. Aprígio Veloso, 882 - Bodocongó', status: 'Parceiro Credenciado' }
 ];
 
+let adminsData = JSON.parse(localStorage.getItem('vet_admins')) || [
+    { id: 1, name: 'Coordenador / Médico Veterinário Admin', email: 'admin@uninassau.edu.br', password: 'admin123' }
+];
+
+let tutorsData = JSON.parse(localStorage.getItem('vet_tutors')) || [];
+
 let clinicContacts = JSON.parse(localStorage.getItem('vet_clinic_contacts')) || [];
 let tutorNotifications = JSON.parse(localStorage.getItem('vet_tutor_notifications')) || [];
 
@@ -128,6 +134,8 @@ function saveData() {
     localStorage.setItem('vet_animals', JSON.stringify(animalsData));
     localStorage.setItem('vet_appointments', JSON.stringify(appointmentsData));
     localStorage.setItem('vet_clinics', JSON.stringify(clinicsData));
+    localStorage.setItem('vet_admins', JSON.stringify(adminsData));
+    localStorage.setItem('vet_tutors', JSON.stringify(tutorsData));
     localStorage.setItem('vet_clinic_contacts', JSON.stringify(clinicContacts));
     localStorage.setItem('vet_tutor_notifications', JSON.stringify(tutorNotifications));
 }
@@ -149,7 +157,7 @@ function closeModal(modalId) {
 }
 
 function switchTab(tabId) {
-    const restrictedTabs = ['animals', 'tutor-area', 'appointments'];
+    const restrictedTabs = ['animals', 'tutor-area', 'appointments', 'clinics'];
     if (restrictedTabs.includes(tabId) && !currentUser) {
         openModal('login-select-modal');
         showToast('Acesso restrito. Faça login para navegar nas áreas protegidas.');
@@ -163,7 +171,7 @@ function switchTab(tabId) {
     }
 
     if (tabId === 'clinics' && currentUser && currentUser.role === 'tutor') {
-        showToast('Acesso negado: Tutores não acessam a aba de Clínicas Parceiras.');
+        showToast('Acesso negado: Tutores não acessam Clínicas Parceiras.');
         switchTab('tutor-area');
         return;
     }
@@ -218,8 +226,11 @@ function handleLogin(e) {
     const pass = document.getElementById('login-password').value;
 
     if (role === 'admin') {
-        if (email === 'admin@uninassau.edu.br' && pass === 'admin123') {
-            currentUser = { name: 'Coordenador / Médico Veterinário Admin', email: email, role: 'admin' };
+        const foundAdmin = adminsData.find(
+            a => a.email.toLowerCase() === email.toLowerCase() && a.password === pass
+        );
+        if (foundAdmin) {
+            currentUser = { name: foundAdmin.name, email: foundAdmin.email, role: 'admin' };
             updateAuthUI();
             closeModal('login-modal');
             showToast('Login realizado como Coordenação / Administrador!');
@@ -257,6 +268,10 @@ function handleLogin(e) {
 
         const foundClinic = clinicsData.find(c => c.email.toLowerCase() === email.toLowerCase());
         if (foundClinic) {
+            if (foundClinic.password && foundClinic.password !== pass) {
+                alert('Credenciais inválidas!');
+                return;
+            }
             currentUser = { name: foundClinic.name, email: email, role: 'clinic', clinicId: foundClinic.id };
             updateAuthUI();
             closeModal('login-modal');
@@ -270,11 +285,20 @@ function handleLogin(e) {
     }
 
     if (role === 'tutor') {
-        currentUser = { name: email.split('@')[0], email: email, role: 'tutor' };
-        updateAuthUI();
-        closeModal('login-modal');
-        showToast('Login realizado como Tutor!');
-        switchTab('tutor-area');
+        const foundTutor = tutorsData.find(
+            t => t.email.toLowerCase() === email.toLowerCase() && t.password === pass
+        );
+        if (foundTutor) {
+            currentUser = { name: foundTutor.name, email: foundTutor.email, role: 'tutor' };
+            updateAuthUI();
+            closeModal('login-modal');
+            showToast('Login realizado como Tutor!');
+            switchTab('tutor-area');
+            return;
+        } else {
+            alert('Credenciais inválidas!');
+            return;
+        }
     }
 }
 
@@ -291,7 +315,26 @@ function registerTutorDirect(e) {
         return;
     }
 
+    const existingIndex = tutorsData.findIndex(t => t.email.toLowerCase() === email.toLowerCase());
+    if (existingIndex !== -1) {
+        tutorsData[existingIndex] = {
+            ...tutorsData[existingIndex],
+            name,
+            email,
+            password
+        };
+    } else {
+        const newTutorId = tutorsData.length > 0 ? Math.max(...tutorsData.map(t => t.id)) + 1 : 1;
+        tutorsData.push({
+            id: newTutorId,
+            name,
+            email,
+            password
+        });
+    }
+
     currentUser = { name, email, role: 'tutor' };
+    saveData();
     updateAuthUI();
     closeModal('signup-modal');
     document.getElementById('signup-form-step1').reset();
@@ -317,7 +360,26 @@ function registerAdminDirect(e) {
         return;
     }
 
+    const existingIndex = adminsData.findIndex(a => a.email.toLowerCase() === email.toLowerCase());
+    if (existingIndex !== -1) {
+        adminsData[existingIndex] = {
+            ...adminsData[existingIndex],
+            name,
+            email,
+            password
+        };
+    } else {
+        const newAdminId = adminsData.length > 0 ? Math.max(...adminsData.map(a => a.id)) + 1 : 1;
+        adminsData.push({
+            id: newAdminId,
+            name,
+            email,
+            password
+        });
+    }
+
     currentUser = { name, email, role: 'admin' };
+    saveData();
     updateAuthUI();
     closeModal('admin-signup-modal');
     document.getElementById('admin-signup-form-step1').reset();
@@ -342,19 +404,38 @@ function registerClinicDirect(e) {
         return;
     }
 
-    const newClinic = {
-        id: clinicsData.length > 0 ? Math.max(...clinicsData.map(c => c.id)) + 1 : 1,
-        name,
-        cnpj,
-        crmv,
-        email,
-        phone,
-        address,
-        status: 'Parceiro Credenciado'
-    };
-    clinicsData.push(newClinic);
+    const existingIndex = clinicsData.findIndex(c => c.email.toLowerCase() === email.toLowerCase());
+    let savedClinic;
+    if (existingIndex !== -1) {
+        savedClinic = {
+            ...clinicsData[existingIndex],
+            name,
+            cnpj,
+            crmv,
+            email,
+            phone,
+            address,
+            password,
+            status: 'Parceiro Credenciado'
+        };
+        clinicsData[existingIndex] = savedClinic;
+    } else {
+        savedClinic = {
+            id: clinicsData.length > 0 ? Math.max(...clinicsData.map(c => c.id)) + 1 : 1,
+            name,
+            cnpj,
+            crmv,
+            email,
+            phone,
+            address,
+            password,
+            status: 'Parceiro Credenciado'
+        };
+        clinicsData.push(savedClinic);
+    }
+
     saveData();
-    currentUser = { name: newClinic.name, email: newClinic.email, role: 'clinic', clinicId: newClinic.id };
+    currentUser = { name: savedClinic.name, email: savedClinic.email, role: 'clinic', clinicId: savedClinic.id };
     updateAuthUI();
     closeModal('clinic-signup-modal');
     document.getElementById('clinic-signup-form-step1').reset();
@@ -384,6 +465,8 @@ function updateAuthUI() {
     const navClinics = document.getElementById('nav-clinics');
     const btnNewAppointment = document.getElementById('btn-new-appointment');
     const btnNewClinic = document.getElementById('btn-new-clinic');
+    const clinicsTitle = document.getElementById('clinics-section-title');
+    const clinicsSubtitle = document.getElementById('clinics-section-subtitle');
 
     if (currentUser) {
         let badge = 'Tutor';
@@ -417,16 +500,22 @@ function updateAuthUI() {
             navAppointments.classList.add('d-none');
             navClinics.classList.remove('d-none');
 
+            if (clinicsTitle) clinicsTitle.innerText = 'Minha Clínica Parceira';
+            if (clinicsSubtitle) clinicsSubtitle.innerText = 'Dados da sua clínica credenciada e requisições de doadores.';
+
             tutorRestrictedBanner.classList.add('d-none');
             tutorNotice.classList.add('d-none');
             clinicFiltersPanel.classList.remove('d-none');
             if (btnNewAppointment) btnNewAppointment.classList.add('d-none');
-            if (btnNewClinic) btnNewClinic.classList.remove('d-none');
+            if (btnNewClinic) btnNewClinic.classList.add('d-none');
         } else {
             navTutorBtn.classList.add('d-none');
             navAnimals.classList.remove('d-none');
             navAppointments.classList.remove('d-none');
             navClinics.classList.remove('d-none');
+
+            if (clinicsTitle) clinicsTitle.innerText = 'Clínicas Parceiras';
+            if (clinicsSubtitle) clinicsSubtitle.innerText = 'Rede de clínicas para requisição de doadores e transferências.';
 
             tutorRestrictedBanner.classList.add('d-none');
             tutorNotice.classList.add('d-none');
@@ -451,7 +540,10 @@ function updateAuthUI() {
         navTutorBtn.classList.add('d-none');
         navAnimals.classList.add('d-none');
         navAppointments.classList.add('d-none');
-        navClinics.classList.remove('d-none');
+        navClinics.classList.add('d-none');
+
+        if (clinicsTitle) clinicsTitle.innerText = 'Clínicas Parceiras';
+        if (clinicsSubtitle) clinicsSubtitle.innerText = 'Rede de clínicas para requisição de doadores e transferências.';
 
         tutorNotice.classList.remove('d-none');
         tutorRestrictedBanner.classList.add('d-none');
@@ -869,7 +961,6 @@ function renderAppointments() {
             <td class="text-end">
                 ${isAdmin ? `
                     <button type="button" onclick="toggleApptStatus(${appt.id})" class="btn btn-sm btn-outline-dark rounded-pill me-1">Status</button>
-                    <button type="button" onclick="openAppointmentModal(${appt.id})" class="btn btn-sm btn-outline-primary rounded-pill me-1">Reagendar</button>
                     <button type="button" onclick="deleteAppt(${appt.id})" class="btn btn-sm btn-outline-danger rounded-pill">Cancelar</button>
                 ` : isOwnerTutor ? `
                     <button type="button" onclick="openAppointmentModal(${appt.id})" class="btn btn-sm btn-outline-primary rounded-pill me-1">Reagendar</button>
@@ -882,13 +973,8 @@ function renderAppointments() {
 }
 
 function openAppointmentModal(apptId = null) {
-    if (!currentUser || (currentUser.role !== 'tutor' && currentUser.role !== 'admin')) {
+    if (!currentUser || currentUser.role !== 'tutor') {
         openModal('login-select-modal');
-        return;
-    }
-
-    if (currentUser.role === 'admin' && !apptId) {
-        showToast('A Coordenação pode apenas reagendar ou cancelar consultas.');
         return;
     }
 
@@ -904,9 +990,7 @@ function openAppointmentModal(apptId = null) {
         const appt = appointmentsData.find(a => a.id === apptId);
         if (!appt) return;
 
-        const poolPets = currentUser.role === 'admin'
-            ? animalsData
-            : animalsData.filter(a => a.owner.toLowerCase() === currentUser.name.toLowerCase());
+        const poolPets = animalsData.filter(a => a.owner.toLowerCase() === currentUser.name.toLowerCase());
 
         poolPets.forEach(a => {
             const opt = document.createElement('option');
@@ -954,7 +1038,7 @@ function openAppointmentModal(apptId = null) {
 
 function saveAppointment(e) {
     e.preventDefault();
-    if (!currentUser || (currentUser.role !== 'tutor' && currentUser.role !== 'admin')) {
+    if (!currentUser || currentUser.role !== 'tutor') {
         return;
     }
 
@@ -962,11 +1046,6 @@ function saveAppointment(e) {
     const animalName = document.getElementById('appt-animal-select').value;
     const serviceVal = document.getElementById('appt-service').value;
     const dateVal = document.getElementById('appt-date').value;
-
-    if (currentUser.role === 'admin' && !id) {
-        showToast('A Coordenação pode apenas reagendar consultas existentes.');
-        return;
-    }
 
     const selectedDate = new Date(dateVal);
     if (selectedDate.getDay() === 0 || selectedDate.getDay() === 6) {
@@ -1042,21 +1121,36 @@ function renderClinics() {
     if (!grid) return;
     grid.innerHTML = '';
 
-    clinicsData.forEach(clinic => {
-        const isAdmin = currentUser && currentUser.role === 'admin';
+    if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'clinic')) {
+        return;
+    }
+
+    const isAdmin = currentUser.role === 'admin';
+    const visibleClinics = isAdmin
+        ? clinicsData
+        : clinicsData.filter(c =>
+            (currentUser.clinicId && c.id === currentUser.clinicId) ||
+            (c.email && c.email.toLowerCase() === currentUser.email.toLowerCase()) ||
+            (c.name && c.name.toLowerCase() === currentUser.name.toLowerCase())
+        );
+
+    if (visibleClinics.length === 0) {
+        grid.innerHTML = `<div class="col-12"><div class="alert alert-light border text-center small mb-0">Nenhuma clínica encontrada para este acesso.</div></div>`;
+        return;
+    }
+
+    visibleClinics.forEach(clinic => {
         const col = document.createElement('div');
-        col.className = 'col-md-6';
+        col.className = isAdmin ? 'col-md-6' : 'col-12';
         col.innerHTML = `
             <div class="card h-100 bg-white">
                 <div class="card-body small">
                     <h5 class="card-title fw-bold mb-1">${clinic.name}</h5>
-                    <p class="${isAdmin ? 'mb-2' : 'mb-0'} text-muted">${clinic.address || 'Campina Grande - PB'}</p>
-                    ${isAdmin ? `
-                        <p class="mb-1"><strong>Status:</strong> ${clinic.status || 'Ativo'}</p>
-                        <p class="mb-1"><strong>CRMV/CNPJ:</strong> ${clinic.crmv || 'CRMV-PB'} · ${clinic.cnpj || 'Cadastrado'}</p>
-                        <p class="mb-1"><strong>Telefone:</strong> ${clinic.phone || '(83) 3300-0000'}</p>
-                        <p class="mb-0"><strong>E-mail:</strong> ${clinic.email}</p>
-                    ` : ''}
+                    <p class="mb-2 text-muted">${clinic.address || 'Campina Grande - PB'}</p>
+                    <p class="mb-1"><strong>Status:</strong> ${clinic.status || 'Ativo'}</p>
+                    <p class="mb-1"><strong>CRMV/CNPJ:</strong> ${clinic.crmv || 'CRMV-PB'} · ${clinic.cnpj || 'Cadastrado'}</p>
+                    <p class="mb-1"><strong>Telefone:</strong> ${clinic.phone || '(83) 3300-0000'}</p>
+                    <p class="mb-0"><strong>E-mail:</strong> ${clinic.email}</p>
                 </div>
                 ${isAdmin ? `
                     <div class="card-footer bg-white text-end border-0 pt-0 pb-3 px-3">
