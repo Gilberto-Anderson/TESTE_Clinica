@@ -1,47 +1,51 @@
-let currentUser = JSON.parse(localStorage.getItem('vet_current_user')) || null;
+let currentUser = null;
+localStorage.removeItem('vet_current_user');
 
 let animalsData = JSON.parse(localStorage.getItem('vet_animals')) || [
-    { 
-        id: 1, 
-        name: 'Thor', 
-        species: 'Canino', 
-        breed: 'Golden Retriever', 
-        blood: 'DEA 1.1 Positivo', 
-        age: '4 anos · 30 kg', 
-        owner: 'Mariana Costa', 
-        photo: 'https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=600&q=80', 
-        notes: 'Doador apto - Vacinas em dia.', 
-        anamnesisPdf: 'data:application/pdf;base64,JVBERi0xLjQKJ...', 
-        lastCollectionDate: '2026-02-15', 
-        donatedAmount: '450 ml' 
+    {
+        id: 1,
+        name: 'Thor',
+        species: 'Canino',
+        breed: 'Golden Retriever',
+        blood: 'DEA 1.1 Positivo',
+        age: '4 anos',
+        weight: '30 kg',
+        owner: 'Mariana Costa',
+        photo: 'https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=600&q=80',
+        notes: 'Doador apto - Vacinas em dia.',
+        anamnesisPdf: 'data:application/pdf;base64,JVBERi0xLjQKJ...',
+        lastCollectionDate: '2026-02-15',
+        donatedAmount: '450 ml'
     },
-    { 
-        id: 2, 
-        name: 'Luna', 
-        species: 'Felino', 
-        breed: 'Siamês', 
-        blood: 'Tipo A', 
-        age: '2 anos · 4.2 kg', 
-        owner: 'Lucas Almeida', 
-        photo: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=600&q=80', 
-        notes: 'Castrada. Histórico clínico regular.', 
-        anamnesisPdf: 'data:application/pdf;base64,JVBERi0xLjQKJ...', 
-        lastCollectionDate: '2026-01-10', 
-        donatedAmount: '50 ml' 
+    {
+        id: 2,
+        name: 'Luna',
+        species: 'Felino',
+        breed: 'Siamês',
+        blood: 'Tipo A',
+        age: '2 anos',
+        weight: '4.2 kg',
+        owner: 'Lucas Almeida',
+        photo: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=600&q=80',
+        notes: 'Castrada. Histórico clínico regular.',
+        anamnesisPdf: 'data:application/pdf;base64,JVBERi0xLjQKJ...',
+        lastCollectionDate: '2026-01-10',
+        donatedAmount: '50 ml'
     },
-    { 
-        id: 3, 
-        name: 'Bob', 
-        species: 'Canino', 
-        breed: 'Bulldog Francês', 
-        blood: 'DEA 4 Negativo', 
-        age: '3 anos · 12 kg', 
-        owner: 'Juliana Ribeiro', 
-        photo: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=600&q=80', 
-        notes: 'Acompanhamento preventivo e elegibilidade ativa.', 
-        anamnesisPdf: 'data:application/pdf;base64,JVBERi0xLjQKJ...', 
-        lastCollectionDate: '2025-11-20', 
-        donatedAmount: '350 ml' 
+    {
+        id: 3,
+        name: 'Bob',
+        species: 'Canino',
+        breed: 'Bulldog Francês',
+        blood: 'DEA 4 Negativo',
+        age: '3 anos',
+        weight: '12 kg',
+        owner: 'Juliana Ribeiro',
+        photo: 'https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=600&q=80',
+        notes: 'Acompanhamento preventivo e elegibilidade ativa.',
+        anamnesisPdf: 'data:application/pdf;base64,JVBERi0xLjQKJ...',
+        lastCollectionDate: '2025-11-20',
+        donatedAmount: '350 ml'
     }
 ];
 
@@ -55,14 +59,70 @@ let clinicsData = JSON.parse(localStorage.getItem('vet_clinics')) || [
 ];
 
 let clinicContacts = JSON.parse(localStorage.getItem('vet_clinic_contacts')) || [];
-let pendingSignupData = null;
+let tutorNotifications = JSON.parse(localStorage.getItem('vet_tutor_notifications')) || [];
+
+const modalInstances = {};
+const MIN_APPOINTMENT_GAP_MINUTES = 15;
+
+function initPlaceholdersHideOnFocus() {
+    document.querySelectorAll('input[placeholder], textarea[placeholder]').forEach(el => {
+        if (!el.dataset.originalPlaceholder) {
+            el.dataset.originalPlaceholder = el.getAttribute('placeholder');
+        }
+        el.addEventListener('focus', () => {
+            el.setAttribute('placeholder', '');
+        });
+        el.addEventListener('blur', () => {
+            if (!el.value) {
+                el.setAttribute('placeholder', el.dataset.originalPlaceholder || '');
+            }
+        });
+    });
+}
+
+function getAnimalAgeAndWeight(animal) {
+    let age = animal.age || '';
+    let weight = animal.weight || '';
+
+    if (!weight && age.includes('·')) {
+        const parts = age.split('·').map(p => p.trim());
+        age = parts[0] || '';
+        weight = parts[1] || '';
+    }
+
+    return { age, weight };
+}
+
+function formatAnimalVitals(animal) {
+    const { age, weight } = getAnimalAgeAndWeight(animal);
+    const items = [];
+    if (age) items.push(`Idade: ${age}`);
+    if (weight) items.push(`Peso: ${weight}`);
+    return items.join(' · ');
+}
 
 function saveData() {
-    localStorage.setItem('vet_current_user', JSON.stringify(currentUser));
     localStorage.setItem('vet_animals', JSON.stringify(animalsData));
     localStorage.setItem('vet_appointments', JSON.stringify(appointmentsData));
     localStorage.setItem('vet_clinics', JSON.stringify(clinicsData));
     localStorage.setItem('vet_clinic_contacts', JSON.stringify(clinicContacts));
+    localStorage.setItem('vet_tutor_notifications', JSON.stringify(tutorNotifications));
+}
+
+function openModal(modalId) {
+    const el = document.getElementById(modalId);
+    if (!el) return;
+    if (!modalInstances[modalId]) {
+        modalInstances[modalId] = new bootstrap.Modal(el);
+    }
+    modalInstances[modalId].show();
+}
+
+function closeModal(modalId) {
+    const el = document.getElementById(modalId);
+    if (!el) return;
+    const instance = bootstrap.Modal.getInstance(el) || modalInstances[modalId];
+    if (instance) instance.hide();
 }
 
 function switchTab(tabId) {
@@ -73,16 +133,20 @@ function switchTab(tabId) {
         return;
     }
 
-    // Cada Tutor só poderá ver suas consultas e NÃO tem acesso à aba Animais
     if (tabId === 'animals' && currentUser && currentUser.role === 'tutor') {
-        showToast('Aba desabilitada para o perfil de Tutor. Utilize seu painel exclusivo "Minha Conta".');
+        showToast('Utilize seu painel "Minha Conta (Tutor)".');
         switchTab('tutor-area');
         return;
     }
 
-    // Clínicas parceiras NÃO têm acesso à aba Consultas
+    if (tabId === 'clinics' && currentUser && currentUser.role === 'tutor') {
+        showToast('Acesso negado: Tutores não acessam a aba de Clínicas Parceiras.');
+        switchTab('tutor-area');
+        return;
+    }
+
     if (tabId === 'appointments' && currentUser && currentUser.role === 'clinic') {
-        showToast('Acesso negado: Clínicas parceiras não possuem permissão de acesso à aba de Consultas.');
+        showToast('Acesso negado: Clínicas parceiras não acessam a aba de Consultas.');
         switchTab('animals');
         return;
     }
@@ -93,19 +157,19 @@ function switchTab(tabId) {
         return;
     }
 
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-    document.querySelectorAll('.nav-btn').forEach(el => {
-        el.classList.remove('bg-neutral-100', 'text-dark', 'bg-blue-50');
-        el.classList.add('text-neutral-600');
-    });
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('d-none'));
+    document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active', 'fw-semibold'));
 
     const selectedTab = document.getElementById(`tab-${tabId}`);
-    if (selectedTab) selectedTab.classList.remove('hidden');
+    if (selectedTab) selectedTab.classList.remove('d-none');
 
     const selectedNav = document.getElementById(`nav-${tabId}`);
-    if (selectedNav) {
-        selectedNav.classList.remove('text-neutral-600');
-        selectedNav.classList.add('bg-blue-50', 'text-dark');
+    if (selectedNav) selectedNav.classList.add('active', 'fw-semibold');
+
+    const navCollapse = document.getElementById('mainNavbar');
+    if (navCollapse && navCollapse.classList.contains('show')) {
+        const bsCollapse = bootstrap.Collapse.getInstance(navCollapse);
+        if (bsCollapse) bsCollapse.hide();
     }
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -115,23 +179,11 @@ function switchTab(tabId) {
     if (tabId === 'appointments') renderAppointments();
 }
 
-function toggleMobileMenu() {
-    document.getElementById('mobile-menu').classList.toggle('hidden');
-}
-
-function openModal(modalId) {
-    document.getElementById(modalId).classList.remove('hidden');
-}
-
-function closeModal(modalId) {
-    document.getElementById(modalId).classList.add('hidden');
-}
-
 function openLoginModalForRole(role) {
     document.getElementById('login-target-role').value = role;
     const titleEl = document.getElementById('login-modal-title');
     if (role === 'tutor') titleEl.innerText = 'Entrar como Tutor';
-    if (role === 'admin') titleEl.innerText = 'Entrar como Coordenação / Médico Veterinário';
+    if (role === 'admin') titleEl.innerText = 'Entrar como Coordenação / Veterinário';
     if (role === 'clinic') titleEl.innerText = 'Entrar como Clínica Parceira';
     openModal('login-modal');
 }
@@ -145,14 +197,13 @@ function handleLogin(e) {
     if (role === 'admin') {
         if (email === 'admin@uninassau.edu.br' && pass === 'admin123') {
             currentUser = { name: 'Coordenador / Médico Veterinário Admin', email: email, role: 'admin' };
-            saveData();
             updateAuthUI();
             closeModal('login-modal');
             showToast('Login realizado como Coordenação / Administrador!');
             switchTab('animals');
             return;
         } else {
-            alert('Credenciais de Administrador inválidas! Use admin@uninassau.edu.br / admin123');
+            alert('Credenciais inválidas!');
             return;
         }
     }
@@ -171,12 +222,12 @@ function handleLogin(e) {
                     status: 'Parceiro Credenciado'
                 };
                 clinicsData.push(testClinic);
+                saveData();
             }
             currentUser = { name: testClinic.name, email: email, role: 'clinic', clinicId: testClinic.id };
-            saveData();
             updateAuthUI();
             closeModal('login-modal');
-            showToast(`Acesso restrito liberado para a clínica via ${email}!`);
+            showToast(`Acesso liberado para ${testClinic.name}!`);
             switchTab('animals');
             return;
         }
@@ -184,147 +235,96 @@ function handleLogin(e) {
         const foundClinic = clinicsData.find(c => c.email.toLowerCase() === email.toLowerCase());
         if (foundClinic) {
             currentUser = { name: foundClinic.name, email: email, role: 'clinic', clinicId: foundClinic.id };
-            saveData();
             updateAuthUI();
             closeModal('login-modal');
-            showToast(`Bem-vindo(a), ${foundClinic.name}! (Acesso de Clínica Parceira)`);
+            showToast(`Bem-vindo(a), ${foundClinic.name}!`);
             switchTab('animals');
             return;
         } else {
-            alert('Clínica não encontrada com este e-mail cadastrado. Use um e-mail @uninassau.edu.br para acesso teste.');
+            alert('Clínica não encontrada com este e-mail cadastrado.');
             return;
         }
     }
 
     if (role === 'tutor') {
         currentUser = { name: email.split('@')[0], email: email, role: 'tutor' };
-        saveData();
         updateAuthUI();
         closeModal('login-modal');
         showToast('Login realizado como Tutor!');
         switchTab('tutor-area');
-        return;
     }
 }
 
-function requestVerificationCode(e, roleType) {
+function registerTutorDirect(e) {
     e.preventDefault();
-    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const name = document.getElementById('signup-name').value.trim();
+    const email = document.getElementById('signup-email').value.trim();
+    const password = document.getElementById('signup-password').value;
+    const confirmPassword = document.getElementById('signup-confirm-password').value;
 
-    if (roleType === 'tutor') {
-        const name = document.getElementById('signup-name').value;
-        const email = document.getElementById('signup-email').value;
-        const password = document.getElementById('signup-password').value;
-        const confirmPassword = document.getElementById('signup-confirm-password').value;
-
-        if (password !== confirmPassword) {
-            alert('As senhas não coincidem!');
-            return;
-        }
-
-        pendingSignupData = { role: 'tutor', name, email, password };
-        document.getElementById('simulated-code-display').innerText = verificationCode;
-        pendingSignupData.code = verificationCode;
-
-        document.getElementById('signup-form-step1').classList.add('hidden');
-        document.getElementById('signup-form-step2').classList.remove('hidden');
-        showToast('Código de verificação enviado para o e-mail do tutor.');
-    } else if (roleType === 'admin') {
-        const name = document.getElementById('admin-signup-name').value;
-        const email = document.getElementById('admin-signup-email').value;
-        const password = document.getElementById('admin-signup-password').value;
-
-        if (!email.endsWith('@uninassau.edu.br')) {
-            alert('O cadastro da Coordenação exige e-mail institucional @uninassau.edu.br!');
-            return;
-        }
-
-        pendingSignupData = { role: 'admin', name, email, password };
-        document.getElementById('admin-simulated-code-display').innerText = verificationCode;
-        pendingSignupData.code = verificationCode;
-
-        document.getElementById('admin-signup-form-step1').classList.add('hidden');
-        document.getElementById('admin-signup-form-step2').classList.remove('hidden');
-        showToast('Código de verificação institucional enviado.');
-    } else if (roleType === 'clinic') {
-        const name = document.getElementById('cs-name').value;
-        const cnpj = document.getElementById('cs-cnpj').value;
-        const crmv = document.getElementById('cs-crmv').value;
-        const email = document.getElementById('cs-email').value;
-        const phone = document.getElementById('cs-phone').value;
-        const address = document.getElementById('cs-address').value;
-        const password = document.getElementById('cs-password').value;
-
-        pendingSignupData = { role: 'clinic', name, cnpj, crmv, email, phone, address, password };
-        document.getElementById('clinic-simulated-code-display').innerText = verificationCode;
-        pendingSignupData.code = verificationCode;
-
-        document.getElementById('clinic-signup-form-step1').classList.add('hidden');
-        document.getElementById('clinic-signup-form-step2').classList.remove('hidden');
-        showToast('Código de verificação da clínica enviado por e-mail.');
-    }
-}
-
-function confirmSignupVerification(roleType) {
-    let inputCode = '';
-    if (roleType === 'tutor') inputCode = document.getElementById('signup-verification-input').value.trim();
-    if (roleType === 'admin') inputCode = document.getElementById('admin-verification-input').value.trim();
-    if (roleType === 'clinic') inputCode = document.getElementById('clinic-verification-input').value.trim();
-
-    if (inputCode !== pendingSignupData.code) {
-        alert('Código de verificação incorreto! Verifique o código exibido.');
+    if (password !== confirmPassword) {
+        alert('As senhas não coincidem!');
         return;
     }
 
-    if (roleType === 'tutor') {
-        currentUser = { name: pendingSignupData.name, email: pendingSignupData.email, role: 'tutor' };
-        saveData();
-        updateAuthUI();
-        closeModal('signup-modal');
-        document.getElementById('signup-form-step1').reset();
-        document.getElementById('signup-form-step1').classList.remove('hidden');
-        document.getElementById('signup-form-step2').classList.add('hidden');
-        showToast('Conta de tutor verificada e criada com sucesso!');
-        switchTab('tutor-area');
-    } else if (roleType === 'admin') {
-        currentUser = { name: pendingSignupData.name, email: pendingSignupData.email, role: 'admin' };
-        saveData();
-        updateAuthUI();
-        closeModal('admin-signup-modal');
-        document.getElementById('admin-signup-form-step1').reset();
-        document.getElementById('admin-signup-form-step1').classList.remove('hidden');
-        document.getElementById('admin-signup-form-step2').classList.add('hidden');
-        showToast('Cadastro institucional verificado com sucesso!');
-        switchTab('animals');
-    } else if (roleType === 'clinic') {
-        const newClinic = {
-            id: clinicsData.length > 0 ? Math.max(...clinicsData.map(c => c.id)) + 1 : 1,
-            name: pendingSignupData.name,
-            cnpj: pendingSignupData.cnpj,
-            crmv: pendingSignupData.crmv,
-            email: pendingSignupData.email,
-            phone: pendingSignupData.phone,
-            address: pendingSignupData.address,
-            status: 'Parceiro Credenciado'
-        };
-        clinicsData.push(newClinic);
-        currentUser = { name: newClinic.name, email: newClinic.email, role: 'clinic', clinicId: newClinic.id };
-        saveData();
-        updateAuthUI();
-        closeModal('clinic-signup-modal');
-        document.getElementById('clinic-signup-form-step1').reset();
-        document.getElementById('clinic-signup-form-step1').classList.remove('hidden');
-        document.getElementById('clinic-signup-form-step2').classList.add('hidden');
-        showToast('Clínica verificada e logada com sucesso!');
-        switchTab('animals');
+    currentUser = { name, email, role: 'tutor' };
+    updateAuthUI();
+    closeModal('signup-modal');
+    document.getElementById('signup-form-step1').reset();
+    showToast('Cadastro de tutor concluído!');
+    switchTab('tutor-area');
+}
+
+function registerAdminDirect(e) {
+    e.preventDefault();
+    const name = document.getElementById('admin-signup-name').value.trim();
+    const email = document.getElementById('admin-signup-email').value.trim();
+
+    if (!email.toLowerCase().endsWith('@sempreuninassau.com.br')) {
+        alert('Informe um e-mail institucional válido para concluir o cadastro.');
+        return;
     }
-    pendingSignupData = null;
+
+    currentUser = { name, email, role: 'admin' };
+    updateAuthUI();
+    closeModal('admin-signup-modal');
+    document.getElementById('admin-signup-form-step1').reset();
+    showToast('Cadastro institucional concluído!');
+    switchTab('animals');
+}
+
+function registerClinicDirect(e) {
+    e.preventDefault();
+    const name = document.getElementById('cs-name').value.trim();
+    const cnpj = document.getElementById('cs-cnpj').value.trim();
+    const crmv = document.getElementById('cs-crmv').value.trim();
+    const email = document.getElementById('cs-email').value.trim();
+    const phone = document.getElementById('cs-phone').value.trim();
+    const address = document.getElementById('cs-address').value.trim();
+
+    const newClinic = {
+        id: clinicsData.length > 0 ? Math.max(...clinicsData.map(c => c.id)) + 1 : 1,
+        name,
+        cnpj,
+        crmv,
+        email,
+        phone,
+        address,
+        status: 'Parceiro Credenciado'
+    };
+    clinicsData.push(newClinic);
+    saveData();
+    currentUser = { name: newClinic.name, email: newClinic.email, role: 'clinic', clinicId: newClinic.id };
+    updateAuthUI();
+    closeModal('clinic-signup-modal');
+    document.getElementById('clinic-signup-form-step1').reset();
+    showToast('Clínica cadastrada com sucesso!');
+    switchTab('animals');
 }
 
 function logout() {
     currentUser = null;
     localStorage.removeItem('vet_current_user');
-    saveData();
     updateAuthUI();
     showToast('Sessão encerrada.');
     switchTab('home');
@@ -339,107 +339,97 @@ function updateAuthUI() {
     const clinicFiltersPanel = document.getElementById('clinic-filters-panel');
     const clinicPortalBox = document.getElementById('clinic-portal-box');
     const navTutorBtn = document.getElementById('nav-tutor-area');
-    const mobileTutorBtn = document.getElementById('mobile-nav-tutor');
-
     const navAnimals = document.getElementById('nav-animals');
-    const mobileNavAnimals = document.getElementById('mobile-nav-animals');
     const navAppointments = document.getElementById('nav-appointments');
-    const mobileNavAppointments = document.getElementById('mobile-nav-appointments');
+    const navClinics = document.getElementById('nav-clinics');
+    const btnNewAppointment = document.getElementById('btn-new-appointment');
+    const btnNewClinic = document.getElementById('btn-new-clinic');
 
     if (currentUser) {
-        let badge = '🐾 Tutor';
-        if (currentUser.role === 'admin') badge = '👑 Coordenação / Admin';
-        if (currentUser.role === 'clinic') badge = '🏥 Clínica Parceira';
+        let badge = 'Tutor';
+        if (currentUser.role === 'admin') badge = 'Coordenação / Admin';
+        if (currentUser.role === 'clinic') badge = 'Clínica Parceira';
 
         authArea.innerHTML = `
-            <div class="flex items-center space-x-3">
-                <div class="text-right hidden sm:block">
-                    <span class="text-xs font-bold block">${currentUser.name}</span>
-                    <span class="text-[10px] text-neutral-500 block">${badge}</span>
+            <div class="d-flex align-items-center gap-2">
+                <div class="text-end d-none d-lg-block lh-sm">
+                    <span class="small fw-bold d-block">${currentUser.name}</span>
+                    <small class="text-muted" style="font-size: 0.7rem;">${badge}</small>
                 </div>
-                <button onclick="logout()" class="px-3 py-2 text-xs font-medium bg-neutral-100 hover:bg-neutral-200 rounded-xl transition">Sair</button>
+                <button type="button" onclick="logout()" class="btn btn-sm btn-outline-secondary rounded-pill">Sair</button>
             </div>
         `;
 
         if (currentUser.role === 'tutor') {
-            if (navTutorBtn) navTutorBtn.classList.remove('hidden');
-            if (mobileTutorBtn) mobileTutorBtn.classList.remove('hidden');
-            
-            if (navAnimals) navAnimals.classList.add('hidden');
-            if (mobileNavAnimals) mobileNavAnimals.classList.add('hidden');
-            
-            if (navAppointments) navAppointments.classList.remove('hidden');
-            if (mobileNavAppointments) mobileNavAppointments.classList.remove('hidden');
+            navTutorBtn.classList.remove('d-none');
+            navAnimals.classList.add('d-none');
+            navAppointments.classList.remove('d-none');
+            navClinics.classList.add('d-none');
 
-            if (tutorRestrictedBanner) tutorRestrictedBanner.classList.remove('hidden');
-            if (tutorNotice) tutorNotice.classList.add('hidden');
-            if (clinicFiltersPanel) clinicFiltersPanel.classList.add('hidden');
-
+            tutorRestrictedBanner.classList.remove('d-none');
+            tutorNotice.classList.add('d-none');
+            clinicFiltersPanel.classList.add('d-none');
+            if (btnNewAppointment) btnNewAppointment.classList.remove('d-none');
+            if (btnNewClinic) btnNewClinic.classList.add('d-none');
         } else if (currentUser.role === 'clinic') {
-            if (navTutorBtn) navTutorBtn.classList.add('hidden');
-            if (mobileTutorBtn) mobileTutorBtn.classList.add('hidden');
+            navTutorBtn.classList.add('d-none');
+            navAnimals.classList.remove('d-none');
+            navAppointments.classList.add('d-none');
+            navClinics.classList.remove('d-none');
 
-            if (navAnimals) navAnimals.classList.remove('hidden');
-            if (mobileNavAnimals) mobileNavAnimals.classList.remove('hidden');
+            tutorRestrictedBanner.classList.add('d-none');
+            tutorNotice.classList.add('d-none');
+            clinicFiltersPanel.classList.remove('d-none');
+            if (btnNewAppointment) btnNewAppointment.classList.add('d-none');
+            if (btnNewClinic) btnNewClinic.classList.remove('d-none');
+        } else {
+            navTutorBtn.classList.add('d-none');
+            navAnimals.classList.remove('d-none');
+            navAppointments.classList.remove('d-none');
+            navClinics.classList.remove('d-none');
 
-            if (navAppointments) navAppointments.classList.add('hidden');
-            if (mobileNavAppointments) mobileNavAppointments.classList.add('hidden');
-
-            if (tutorRestrictedBanner) tutorRestrictedBanner.classList.add('hidden');
-            if (tutorNotice) tutorNotice.classList.add('hidden');
-            if (clinicFiltersPanel) clinicFiltersPanel.classList.remove('hidden');
-
-        } else { // Admin (Coordenação)
-            if (navTutorBtn) navTutorBtn.classList.add('hidden');
-            if (mobileTutorBtn) mobileTutorBtn.classList.add('hidden');
-
-            if (navAnimals) navAnimals.classList.remove('hidden');
-            if (mobileNavAnimals) mobileNavAnimals.classList.remove('hidden');
-            if (navAppointments) navAppointments.classList.remove('hidden');
-            if (mobileNavAppointments) mobileNavAppointments.classList.remove('hidden');
-
-            if (tutorRestrictedBanner) tutorRestrictedBanner.classList.add('hidden');
-            if (tutorNotice) tutorNotice.classList.add('hidden');
-            if (clinicFiltersPanel) clinicFiltersPanel.classList.add('hidden');
+            tutorRestrictedBanner.classList.add('d-none');
+            tutorNotice.classList.add('d-none');
+            clinicFiltersPanel.classList.add('d-none');
+            if (btnNewAppointment) btnNewAppointment.classList.add('d-none');
+            if (btnNewClinic) btnNewClinic.classList.add('d-none');
         }
 
-        if (clinicPortalBox) {
-            if (currentUser.role === 'clinic') {
-                clinicPortalBox.classList.remove('hidden');
-                document.getElementById('logged-clinic-name').innerText = currentUser.name;
-                renderClinicContactsList();
-            } else {
-                clinicPortalBox.classList.add('hidden');
-            }
+        if (currentUser.role === 'clinic') {
+            clinicPortalBox.classList.remove('d-none');
+            document.getElementById('logged-clinic-name').innerText = currentUser.name;
+            renderClinicContactsList();
+        } else {
+            clinicPortalBox.classList.add('d-none');
         }
     } else {
         authArea.innerHTML = `
-            <button onclick="openModal('login-select-modal')" class="px-4 py-2 text-sm font-medium text-dark border border-dark rounded-xl hover:bg-dark hover:text-white transition">Entrar</button>
-            <button onclick="openModal('signup-select-modal')" class="hidden sm:inline-flex px-4 py-2 text-sm font-medium bg-nassauYellow text-slate-900 font-semibold rounded-xl hover:bg-yellow-400 transition shadow-sm">Cadastrar</button>
+            <button type="button" onclick="openModal('login-select-modal')" class="btn btn-sm btn-outline-secondary rounded-pill">Entrar</button>
+            <button type="button" onclick="openModal('signup-select-modal')" class="btn btn-sm btn-accent rounded-pill">Cadastrar</button>
         `;
-        
-        if (navTutorBtn) navTutorBtn.classList.add('hidden');
-        if (mobileTutorBtn) mobileTutorBtn.classList.add('hidden');
-        
-        if (navAnimals) navAnimals.classList.add('hidden');
-        if (mobileNavAnimals) mobileNavAnimals.classList.add('hidden');
-        
-        if (navAppointments) navAppointments.classList.add('hidden');
-        if (mobileNavAppointments) mobileNavAppointments.classList.add('hidden');
 
-        if (tutorNotice) tutorNotice.classList.remove('hidden');
-        if (tutorRestrictedBanner) tutorRestrictedBanner.classList.add('hidden');
-        if (clinicFiltersPanel) clinicFiltersPanel.classList.add('hidden');
-        if (clinicPortalBox) clinicPortalBox.classList.add('hidden');
+        navTutorBtn.classList.add('d-none');
+        navAnimals.classList.add('d-none');
+        navAppointments.classList.add('d-none');
+        navClinics.classList.remove('d-none');
+
+        tutorNotice.classList.remove('d-none');
+        tutorRestrictedBanner.classList.add('d-none');
+        clinicFiltersPanel.classList.add('d-none');
+        clinicPortalBox.classList.add('d-none');
+        if (btnNewAppointment) btnNewAppointment.classList.remove('d-none');
+        if (btnNewClinic) btnNewClinic.classList.add('d-none');
     }
+
     renderAppointments();
-    renderClinics(); 
+    renderClinics();
 }
 
 function clearClinicFilters() {
     document.getElementById('clinic-filter-blood').value = '';
     document.getElementById('clinic-filter-age').value = '';
     document.getElementById('clinic-filter-weight').value = '';
+    initPlaceholdersHideOnFocus();
     renderAnimals();
 }
 
@@ -449,10 +439,7 @@ function renderAnimals() {
     grid.innerHTML = '';
 
     if (currentUser && currentUser.role === 'tutor') {
-        grid.innerHTML = `<div class="col-span-full py-8 text-center text-amber-700 bg-amber-50 rounded-2xl border border-amber-200 text-sm">
-            <i class="fa-solid fa-lock text-2xl mb-2 block text-amber-600"></i>
-            A visualização de animais cadastrados por outros tutores é restrita. Acesse a aba <strong>"Minha Conta (Tutor)"</strong> para ver seus pets.
-        </div>`;
+        grid.innerHTML = `<div class="col-12"><div class="alert alert-warning small mb-0">Acesse <strong>Minha Conta (Tutor)</strong> para gerenciar seus pets.</div></div>`;
         return;
     }
 
@@ -462,15 +449,16 @@ function renderAnimals() {
     const filterWeight = document.getElementById('clinic-filter-weight') ? document.getElementById('clinic-filter-weight').value.toLowerCase() : '';
 
     const filtered = animalsData.filter(a => {
-        const matchesQuery = a.name.toLowerCase().includes(query) || 
-                             a.species.toLowerCase().includes(query) || 
-                             a.breed.toLowerCase().includes(query) ||
-                             a.owner.toLowerCase().includes(query);
-        
+        const { age, weight } = getAnimalAgeAndWeight(a);
+        const matchesQuery = a.name.toLowerCase().includes(query) ||
+            a.species.toLowerCase().includes(query) ||
+            a.breed.toLowerCase().includes(query) ||
+            a.owner.toLowerCase().includes(query);
+
         if (currentUser && currentUser.role === 'clinic') {
             const matchesBlood = filterBlood === '' || (a.blood && a.blood.toLowerCase().includes(filterBlood));
-            const matchesAge = filterAge === '' || (a.age && a.age.toLowerCase().includes(filterAge));
-            const matchesWeight = filterWeight === '' || (a.age && a.age.toLowerCase().includes(filterWeight));
+            const matchesAge = filterAge === '' || age.toLowerCase().includes(filterAge);
+            const matchesWeight = filterWeight === '' || weight.toLowerCase().includes(filterWeight);
             return matchesQuery && matchesBlood && matchesAge && matchesWeight;
         }
 
@@ -478,102 +466,51 @@ function renderAnimals() {
     });
 
     if (filtered.length === 0) {
-        grid.innerHTML = `<div class="col-span-full py-12 text-center text-neutral-400 text-sm">Nenhum animal ou doador encontrado com os filtros atuais.</div>`;
+        grid.innerHTML = `<div class="col-12 text-center text-muted py-4 small">Nenhum animal encontrado.</div>`;
         return;
     }
 
     filtered.forEach(animal => {
         const isClinic = currentUser && currentUser.role === 'clinic';
         const isAdmin = currentUser && currentUser.role === 'admin';
-        const canManage = isAdmin;
-
-        const card = document.createElement('div');
-        card.className = 'bg-white border border-border rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between';
-        
         const photoUrl = animal.photo || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=600&q=80';
+        const vitalsText = formatAnimalVitals(animal);
 
-        if (isClinic) {
-            card.innerHTML = `
-                <div>
-                    <div class="h-44 overflow-hidden bg-neutral-100 relative">
-                        <img src="${photoUrl}" alt="${animal.name}" class="w-full h-full object-cover">
-                        <span class="absolute top-3 right-3 text-xs font-semibold bg-dark/80 text-nassauYellow backdrop-blur px-3 py-1 rounded-full shadow-sm">
-                            <i class="fa-solid fa-hospital-user mr-1"></i> Acesso Restrito Clínica
-                        </span>
+        const col = document.createElement('div');
+        col.className = 'col-md-6 col-lg-4';
+        col.innerHTML = `
+            <div class="card h-100 bg-white">
+                <img src="${photoUrl}" alt="${animal.name}" class="card-img-top object-fit-cover" style="height: 180px;">
+                <div class="card-body small">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <h5 class="card-title fw-bold mb-0">${animal.name}</h5>
+                        <span class="badge text-bg-danger rounded-pill">${animal.blood || 'N/I'}</span>
                     </div>
-                    <div class="p-6 space-y-3">
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-xl font-bold text-dark">${animal.name}</h3>
-                            <span class="text-xs font-bold px-2.5 py-1 bg-red-50 text-red-600 rounded-full border border-red-200">
-                                <i class="fa-solid fa-droplet mr-1"></i> ${animal.blood || 'Não inform.'}
-                            </span>
-                        </div>
-                        <p class="text-xs font-medium text-neutral-600"><i class="fa-solid fa-paw mr-1 text-dark"></i> Animal: ${animal.species} (${animal.breed}) · ${animal.age}</p>
-                        
-                        <div class="pt-3 border-t border-border space-y-2 text-xs">
-                            <div class="bg-blue-50/60 p-3 rounded-xl border border-blue-100 space-y-1">
-                                <p class="text-dark font-semibold"><i class="fa-solid fa-calendar-check text-blue-600 mr-1"></i> Data da Última Coleta: <span class="font-normal">${animal.lastCollectionDate || 'Não informada'}</span></p>
-                                <p class="text-dark font-semibold"><i class="fa-solid fa-vial text-red-600 mr-1"></i> Quantidade de Sangue Doado: <span class="font-normal">${animal.donatedAmount || 'Não informada'}</span></p>
-                            </div>
-
-                            <div class="pt-1">
-                                <p class="font-semibold text-neutral-700 mb-1"><i class="fa-solid fa-notes-medical mr-1 text-red-500"></i> Informações de Anamnese:</p>
-                                <p class="text-neutral-600 text-[11px] bg-slate-50 p-2 rounded-lg border border-slate-200 italic mb-2">${animal.notes || 'Anamnese arquivada no sistema.'}</p>
-                                ${animal.anamnesisPdf ? `
-                                    <a href="${animal.anamnesisPdf}" target="_blank" class="w-full inline-flex items-center justify-center text-xs font-semibold text-red-600 hover:text-red-800 bg-red-50 px-3 py-2 rounded-xl border border-red-200 transition shadow-sm">
-                                        <i class="fa-solid fa-file-pdf mr-1.5 text-sm"></i> Visualizar Anamnese Completa (PDF)
-                                    </a>
-                                ` : `<span class="text-[11px] text-red-500 italic block"><i class="fa-solid fa-exclamation-circle mr-1"></i> Anamnese em auditoria.</span>`}
-                            </div>
-                        </div>
-                    </div>
+                    <p class="text-muted mb-2">${animal.species} · ${animal.breed}${vitalsText ? ` · ${vitalsText}` : ''}</p>
+                    <p class="mb-1"><strong>Tutor:</strong> ${animal.owner}</p>
+                    <p class="mb-1"><strong>Última Coleta:</strong> ${animal.lastCollectionDate || 'N/A'}</p>
+                    <p class="mb-1"><strong>Qtd. Doada:</strong> ${animal.donatedAmount || 'N/A'}</p>
+                    <p class="text-muted mb-2">${animal.notes || 'Sem observações.'}</p>
+                    ${animal.anamnesisPdf ? `
+                        <a href="${animal.anamnesisPdf}" target="_blank" class="btn btn-sm btn-outline-danger w-100 rounded-pill">
+                            <i class="fa-solid fa-file-pdf me-1"></i> Visualizar Anamnese (PDF)
+                        </a>
+                    ` : `<span class="text-muted">Sem PDF de anamnese anexado.</span>`}
                 </div>
-                <div class="p-4 bg-slate-50 border-t border-border text-center">
-                    <button onclick="openClinicContactModalWithAnimal('${animal.name}')" class="w-full py-2 bg-dark text-white text-xs font-semibold rounded-xl hover:bg-blue-900 transition">
-                        <i class="fa-solid fa-paper-plane mr-1 text-nassauYellow"></i> Requisitar Doador para este Animal
-                    </button>
-                </div>
-            `;
-            grid.appendChild(card);
-            return;
-        }
-
-        card.innerHTML = `
-            <div>
-                <div class="h-48 overflow-hidden bg-neutral-100 relative">
-                    <img src="${photoUrl}" alt="${animal.name}" class="w-full h-full object-cover">
-                    <span class="absolute top-3 right-3 text-xs font-semibold bg-white/90 backdrop-blur px-3 py-1 rounded-full text-neutral-700 shadow-sm">${animal.species}</span>
-                </div>
-                <div class="p-6">
-                    <div class="flex items-center justify-between mb-1">
-                        <h3 class="text-xl font-bold">${animal.name}</h3>
-                        <span class="text-xs font-bold px-2.5 py-1 bg-red-50 text-red-600 rounded-full border border-red-200"><i class="fa-solid fa-droplet mr-1"></i> ${animal.blood || 'Não inform.'}</span>
-                    </div>
-                    <p class="text-xs text-neutral-500 mb-3">${animal.breed} · ${animal.age}</p>
-                    <div class="space-y-1.5 text-xs text-neutral-600 mb-2">
-                        <p><i class="fa-solid fa-user-tie w-5 text-neutral-400"></i> Tutor: <span class="font-medium text-dark">${animal.owner}</span></p>
-                        <p><i class="fa-solid fa-calendar-check w-5 text-neutral-400"></i> Última Coleta: <span class="font-medium text-dark">${animal.lastCollectionDate || 'N/A'}</span></p>
-                        <p><i class="fa-solid fa-vial w-5 text-neutral-400"></i> Qtd. Doada: <span class="font-medium text-dark">${animal.donatedAmount || 'N/A'}</span></p>
-                        <p><i class="fa-solid fa-notes-medical w-5 text-neutral-400"></i> ${animal.notes || 'Sem observações.'}</p>
-                        
-                        <div class="pt-2 mt-2 border-t border-border">
-                            ${animal.anamnesisPdf ? `
-                                <a href="${animal.anamnesisPdf}" target="_blank" class="inline-flex items-center text-xs font-semibold text-red-600 hover:text-red-800 bg-red-50 px-3 py-1.5 rounded-lg border border-red-200 transition">
-                                    <i class="fa-solid fa-file-pdf mr-1.5 text-sm"></i> Visualizar Anamnese (PDF)
-                                </a>
-                            ` : `<span class="text-[11px] text-red-500 italic"><i class="fa-solid fa-triangle-exclamation mr-1"></i> PDF Pendente.</span>`}
-                        </div>
-                    </div>
+                <div class="card-footer bg-white d-flex justify-content-end gap-2 border-0 pt-0 pb-3 px-3">
+                    ${isClinic ? `
+                        <button type="button" onclick="openClinicContactModalWithAnimal('${animal.name}')" class="btn btn-sm btn-navy w-100 rounded-pill">
+                            Requisitar Doador
+                        </button>
+                    ` : ''}
+                    ${isAdmin ? `
+                        <button type="button" onclick="editAnimal(${animal.id})" class="btn btn-sm btn-outline-secondary rounded-pill">Editar</button>
+                        <button type="button" onclick="deleteAnimal(${animal.id})" class="btn btn-sm btn-outline-danger rounded-pill">Excluir</button>
+                    ` : ''}
                 </div>
             </div>
-            ${canManage ? `
-                <div class="px-6 pb-6 pt-2 border-t border-border flex justify-end space-x-2">
-                    <button onclick="editAnimal(${animal.id})" class="px-3 py-1.5 text-xs font-semibold bg-neutral-100 hover:bg-neutral-200 rounded-lg transition">Editar</button>
-                    <button onclick="deleteAnimal(${animal.id})" class="px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition">Excluir</button>
-                </div>
-            ` : ''}
         `;
-        grid.appendChild(card);
+        grid.appendChild(col);
     });
 }
 
@@ -581,74 +518,93 @@ function renderTutorArea() {
     if (!currentUser || currentUser.role !== 'tutor') {
         switchTab('home');
         openModal('login-select-modal');
-        showToast('Faça login como Tutor para acessar sua conta.');
         return;
     }
 
     document.getElementById('tutor-profile-name').innerText = currentUser.name;
     document.getElementById('tutor-profile-email').innerText = currentUser.email;
 
+    renderTutorNotifications();
+
     const grid = document.getElementById('tutor-pets-grid');
     if (!grid) return;
     grid.innerHTML = '';
 
     const myPets = animalsData.filter(a => a.owner.toLowerCase() === currentUser.name.toLowerCase());
-    document.getElementById('tutor-pets-count').innerText = `${myPets.length} ${myPets.length === 1 ? 'pet cadastrado' : 'pets cadastrados'}`;
+    document.getElementById('tutor-pets-count').innerText = `${myPets.length} ${myPets.length === 1 ? 'pet' : 'pets'}`;
 
     if (myPets.length === 0) {
-        grid.innerHTML = `
-            <div class="col-span-full py-12 text-center bg-neutral-50 rounded-2xl border border-border">
-                <i class="fa-solid fa-paw text-3xl text-neutral-400 mb-2"></i>
-                <p class="text-neutral-500 text-sm">Você ainda não possui pets cadastrados.</p>
-                <button onclick="openAnimalModal()" class="mt-4 px-4 py-2 bg-dark text-white text-xs font-semibold rounded-xl hover:bg-neutral-800 transition">Cadastrar meu primeiro Pet</button>
-            </div>`;
+        grid.innerHTML = `<div class="col-12"><div class="alert alert-light border text-center small">Você ainda não cadastrou nenhum pet.</div></div>`;
         return;
     }
 
     myPets.forEach(animal => {
-        const card = document.createElement('div');
-        card.className = 'bg-white border border-border rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between';
         const photoUrl = animal.photo || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=600&q=80';
-
-        card.innerHTML = `
-            <div>
-                <div class="h-48 overflow-hidden bg-neutral-100 relative">
-                    <img src="${photoUrl}" alt="${animal.name}" class="w-full h-full object-cover">
-                    <span class="absolute top-3 right-3 text-xs font-semibold bg-white/90 backdrop-blur px-3 py-1 rounded-full text-neutral-700 shadow-sm">${animal.species}</span>
-                </div>
-                <div class="p-6">
-                    <div class="flex items-center justify-between mb-1">
-                        <h3 class="text-xl font-bold">${animal.name}</h3>
-                        <span class="text-xs font-bold px-2.5 py-1 bg-red-50 text-red-600 rounded-full border border-red-200"><i class="fa-solid fa-droplet mr-1"></i> ${animal.blood || 'Não inform.'}</span>
+        const vitalsText = formatAnimalVitals(animal);
+        const col = document.createElement('div');
+        col.className = 'col-md-6 col-lg-4';
+        col.innerHTML = `
+            <div class="card h-100 bg-white">
+                <img src="${photoUrl}" alt="${animal.name}" class="card-img-top object-fit-cover" style="height: 180px;">
+                <div class="card-body small">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <h5 class="card-title fw-bold mb-0">${animal.name}</h5>
+                        <span class="badge text-bg-danger rounded-pill">${animal.blood || 'N/I'}</span>
                     </div>
-                    <p class="text-xs text-neutral-500 mb-3">${animal.breed} · ${animal.age}</p>
-                    <div class="space-y-1.5 text-xs text-neutral-600 mb-2">
-                        <p><i class="fa-solid fa-calendar-check w-5 text-neutral-400"></i> Última Coleta: <span class="font-medium text-dark">${animal.lastCollectionDate || 'Sem registros'}</span></p>
-                        <p><i class="fa-solid fa-vial w-5 text-neutral-400"></i> Sangue Doado: <span class="font-medium text-dark">${animal.donatedAmount || 'Sem registros'}</span></p>
-                        
-                        <div class="pt-2 border-t border-border mt-2">
-                            ${animal.anamnesisPdf ? `
-                                <a href="${animal.anamnesisPdf}" target="_blank" class="inline-flex items-center text-xs font-semibold text-red-600 hover:text-red-800 bg-red-50 px-3 py-1.5 rounded-lg border border-red-200 transition">
-                                    <i class="fa-solid fa-file-pdf mr-1.5 text-sm"></i> Anamnese Anexada (PDF)
-                                </a>
-                            ` : `<span class="text-[11px] text-red-500 font-semibold"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Anamnese pendente de anexo.</span>`}
-                        </div>
-                    </div>
+                    <p class="text-muted mb-2">${animal.species} · ${animal.breed}${vitalsText ? ` · ${vitalsText}` : ''}</p>
+                    <p class="mb-1"><strong>Última Coleta:</strong> ${animal.lastCollectionDate || 'Sem registros'}</p>
+                    <p class="mb-2"><strong>Sangue Doado:</strong> ${animal.donatedAmount || 'Sem registros'}</p>
+                    ${animal.anamnesisPdf ? `
+                        <a href="${animal.anamnesisPdf}" target="_blank" class="btn btn-sm btn-outline-danger w-100 rounded-pill">
+                            <i class="fa-solid fa-file-pdf me-1"></i> Anamnese Anexada (PDF)
+                        </a>
+                    ` : `<span class="text-muted">Sem PDF de anamnese anexado.</span>`}
                 </div>
-            </div>
-            <div class="px-6 pb-6 pt-2 border-t border-border flex justify-end space-x-2">
-                <button onclick="editAnimal(${animal.id})" class="px-3 py-1.5 text-xs font-semibold bg-neutral-100 hover:bg-neutral-200 rounded-lg transition">Editar</button>
-                <button onclick="deleteAnimal(${animal.id})" class="px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition">Excluir</button>
+                <div class="card-footer bg-white d-flex justify-content-end gap-2 border-0 pt-0 pb-3 px-3">
+                    <button type="button" onclick="editAnimal(${animal.id})" class="btn btn-sm btn-outline-secondary rounded-pill">Editar</button>
+                    <button type="button" onclick="deleteAnimal(${animal.id})" class="btn btn-sm btn-outline-danger rounded-pill">Excluir</button>
+                </div>
             </div>
         `;
-        grid.appendChild(card);
+        grid.appendChild(col);
     });
+}
+
+function renderTutorNotifications() {
+    const listEl = document.getElementById('tutor-notifications-list');
+    if (!listEl || !currentUser) return;
+
+    const mine = tutorNotifications.filter(n => n.tutorName.toLowerCase() === currentUser.name.toLowerCase());
+    if (mine.length === 0) {
+        listEl.innerHTML = `<div class="list-group-item text-muted">Nenhuma notificação no momento.</div>`;
+        return;
+    }
+
+    listEl.innerHTML = '';
+    mine.slice().reverse().forEach(n => {
+        const item = document.createElement('div');
+        item.className = 'list-group-item list-group-item-danger d-flex justify-content-between align-items-start';
+        item.innerHTML = `
+            <div>
+                <strong>Consulta Cancelada (${n.animal})</strong> — ${n.service} em <span>${n.date.replace('T', ' ')}</span>.
+                <div class="text-muted" style="font-size: 0.75rem;">Enviado por: ${n.cancelledBy} · ${n.createdAt}</div>
+            </div>
+        `;
+        listEl.appendChild(item);
+    });
+}
+
+function clearTutorNotifications() {
+    if (!currentUser) return;
+    tutorNotifications = tutorNotifications.filter(n => n.tutorName.toLowerCase() !== currentUser.name.toLowerCase());
+    saveData();
+    renderTutorNotifications();
+    showToast('Notificações removidas.');
 }
 
 function openAnimalModal(animalId = null) {
     if (!currentUser || (currentUser.role !== 'tutor' && currentUser.role !== 'admin')) {
         openModal('login-select-modal');
-        showToast('Por favor, faça login para gerenciar pets.');
         return;
     }
 
@@ -658,42 +614,45 @@ function openAnimalModal(animalId = null) {
     document.getElementById('animal-breed').value = '';
     document.getElementById('animal-blood').value = '';
     document.getElementById('animal-age').value = '';
+    document.getElementById('animal-weight').value = '';
     document.getElementById('animal-last-collection').value = '';
     document.getElementById('animal-donated-amount').value = '';
     document.getElementById('animal-owner').value = currentUser.role === 'tutor' ? currentUser.name : '';
-    
+
     const pdfInput = document.getElementById('animal-pdf-file');
     const pdfStatus = document.getElementById('current-pdf-status');
     pdfInput.value = '';
 
     if (currentUser.role === 'admin') {
         document.getElementById('animal-owner').removeAttribute('readonly');
-        document.getElementById('animal-owner').classList.remove('bg-slate-100', 'cursor-not-allowed');
+        document.getElementById('animal-owner').classList.remove('bg-light');
     } else {
         document.getElementById('animal-owner').setAttribute('readonly', true);
-        document.getElementById('animal-owner').classList.add('bg-slate-100', 'cursor-not-allowed');
+        document.getElementById('animal-owner').classList.add('bg-light');
     }
 
     document.getElementById('animal-photo-file').value = '';
     document.getElementById('animal-notes').value = '';
     document.getElementById('animal-modal-title').innerText = 'Cadastrar Novo Animal';
-    pdfStatus.innerText = 'É obrigatório anexar o PDF da anamnese no sistema para salvar o pet.';
+    pdfStatus.innerText = 'Opcional no cadastro do pet.';
 
     if (animalId) {
         const animal = animalsData.find(a => a.id === animalId);
         if (animal) {
+            const { age, weight } = getAnimalAgeAndWeight(animal);
             document.getElementById('animal-id').value = animal.id;
             document.getElementById('animal-name').value = animal.name;
             document.getElementById('animal-species').value = animal.species;
             document.getElementById('animal-breed').value = animal.breed;
             document.getElementById('animal-blood').value = animal.blood || '';
-            document.getElementById('animal-age').value = animal.age;
+            document.getElementById('animal-age').value = age;
+            document.getElementById('animal-weight').value = weight;
             document.getElementById('animal-last-collection').value = animal.lastCollectionDate || '';
             document.getElementById('animal-donated-amount').value = animal.donatedAmount || '';
             document.getElementById('animal-owner').value = animal.owner;
             document.getElementById('animal-notes').value = animal.notes || '';
             if (animal.anamnesisPdf) {
-                pdfStatus.innerHTML = `<span class="text-emerald-700 font-bold"><i class="fa-solid fa-check-circle mr-1"></i> PDF da Anamnese já anexado. (Envie outro apenas para substituir)</span>`;
+                pdfStatus.innerHTML = `<span class="text-success fw-bold">PDF já anexado.</span>`;
             }
             document.getElementById('animal-modal-title').innerText = 'Editar Informações do Pet';
         }
@@ -711,7 +670,7 @@ function deleteAnimal(id) {
         saveData();
         renderAnimals();
         if (currentUser && currentUser.role === 'tutor') renderTutorArea();
-        showToast('Pet removido com sucesso.');
+        showToast('Pet removido.');
     }
 }
 
@@ -722,7 +681,7 @@ function saveAnimal(e) {
     const id = document.getElementById('animal-id').value;
     const fileInput = document.getElementById('animal-photo-file');
     const pdfFileInput = document.getElementById('animal-pdf-file');
-    
+
     let photoUrl = '';
     let existingNotes = '';
     let existingPdf = '';
@@ -731,11 +690,6 @@ function saveAnimal(e) {
         photoUrl = existing.photo;
         existingNotes = existing.notes;
         existingPdf = existing.anamnesisPdf || '';
-    }
-
-    if (!existingPdf && (!pdfFileInput.files || !pdfFileInput.files[0])) {
-        alert('Aviso do Sistema: É obrigatório anexar o PDF da Anamnese Veterinária para efetuar o cadastro!');
-        return;
     }
 
     const processAnimalData = (imgUrl, pdfUrl) => {
@@ -748,7 +702,8 @@ function saveAnimal(e) {
             species: document.getElementById('animal-species').value,
             breed: document.getElementById('animal-breed').value,
             blood: document.getElementById('animal-blood').value,
-            age: document.getElementById('animal-age').value,
+            age: document.getElementById('animal-age').value.trim(),
+            weight: document.getElementById('animal-weight').value.trim(),
             lastCollectionDate: document.getElementById('animal-last-collection').value,
             donatedAmount: document.getElementById('animal-donated-amount').value,
             owner: ownerVal,
@@ -761,12 +716,12 @@ function saveAnimal(e) {
             const index = animalsData.findIndex(a => a.id == id);
             if (index !== -1) {
                 animalsData[index] = { id: Number(id), ...data };
-                showToast('Pet e Anamnese atualizados com sucesso!');
+                showToast('Pet atualizado!');
             }
         } else {
             const newId = animalsData.length > 0 ? Math.max(...animalsData.map(a => a.id)) + 1 : 1;
             animalsData.push({ id: newId, ...data });
-            showToast('Novo pet cadastrado com Anamnese anexada!');
+            showToast('Novo pet cadastrado!');
         }
 
         saveData();
@@ -778,9 +733,7 @@ function saveAnimal(e) {
     const handlePdfAndPhoto = (imgResult) => {
         if (pdfFileInput && pdfFileInput.files && pdfFileInput.files[0]) {
             const pdfReader = new FileReader();
-            pdfReader.onload = function(ev) {
-                processAnimalData(imgResult, ev.target.result);
-            };
+            pdfReader.onload = function(ev) { processAnimalData(imgResult, ev.target.result); };
             pdfReader.readAsDataURL(pdfFileInput.files[0]);
         } else {
             processAnimalData(imgResult, existingPdf);
@@ -796,12 +749,23 @@ function saveAnimal(e) {
     }
 }
 
-function checkAppointmentConflict(dateVal, currentId = null) {
-    if (!dateVal) return false;
-    return appointmentsData.some(appt => {
+function getConflictingAppointment(dateVal, currentId = null) {
+    if (!dateVal) return null;
+    const candidateTime = new Date(dateVal).getTime();
+    if (Number.isNaN(candidateTime)) return null;
+
+    const minGapMs = MIN_APPOINTMENT_GAP_MINUTES * 60 * 1000;
+
+    return appointmentsData.find(appt => {
         if (currentId && appt.id == currentId) return false;
-        return appt.date === dateVal;
-    });
+        const apptTime = new Date(appt.date).getTime();
+        if (Number.isNaN(apptTime)) return false;
+        return Math.abs(candidateTime - apptTime) < minGapMs;
+    }) || null;
+}
+
+function checkAppointmentConflict(dateVal, currentId = null) {
+    return getConflictingAppointment(dateVal, currentId) !== null;
 }
 
 function checkAvailabilityNotice() {
@@ -809,30 +773,28 @@ function checkAvailabilityNotice() {
     const currentApptId = document.getElementById('appt-id').value;
     const noticeEl = document.getElementById('availability-notice');
     if (!inputVal) {
-        noticeEl.classList.add('hidden');
+        noticeEl.classList.add('d-none');
         return;
     }
 
     const selectedDate = new Date(inputVal);
     const dayOfWeek = selectedDate.getDay();
     const hours = selectedDate.getHours();
+    const conflict = getConflictingAppointment(inputVal, currentApptId);
 
-    noticeEl.classList.remove('hidden');
-
-    const isOccupied = checkAppointmentConflict(inputVal, currentApptId);
-
-    if (isOccupied) {
-        noticeEl.className = 'p-3.5 rounded-xl border text-xs bg-red-100 border-red-300 text-red-900 font-bold';
-        noticeEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-600 mr-1.5 text-sm"></i> <strong>Data e Horário Ocupados!</strong> Já existe uma consulta cadastrada neste exato horário. Escolha outro momento.`;
+    noticeEl.classList.remove('d-none');
+    if (conflict) {
+        noticeEl.className = 'alert alert-danger py-2 small mb-3';
+        noticeEl.innerText = `Conflito de horário: já existe consulta às ${conflict.date.replace('T', ' ')} (exige diferença mínima de ${MIN_APPOINTMENT_GAP_MINUTES} min).`;
     } else if (dayOfWeek === 0 || dayOfWeek === 6) {
-        noticeEl.className = 'p-3.5 rounded-xl border text-xs bg-red-50 border-red-200 text-red-800 font-semibold';
-        noticeEl.innerHTML = `<i class="fa-solid fa-calendar-xmark text-red-600 mr-1.5"></i> <strong>Dia Indisponível:</strong> O atendimento na Clínica Escola funciona exclusivamente de Segunda a Sexta. Por favor, selecione outro dia.`;
+        noticeEl.className = 'alert alert-warning py-2 small mb-3';
+        noticeEl.innerText = 'Atendimento apenas de Segunda a Sexta.';
     } else if (hours < 8 || hours >= 17) {
-        noticeEl.className = 'p-3.5 rounded-xl border text-xs bg-amber-50 border-amber-200 text-amber-800 font-semibold';
-        noticeEl.innerHTML = `<i class="fa-solid fa-clock text-amber-600 mr-1.5"></i> <strong>Horário Fora de Expediente:</strong> Atendimentos ocorrem entre 08:00 e 17:00. O horário escolhido poderá requerer confirmação especial.`;
+        noticeEl.className = 'alert alert-warning py-2 small mb-3';
+        noticeEl.innerText = 'Horário fora do expediente padrão (08h às 17h).';
     } else {
-        noticeEl.className = 'p-3.5 rounded-xl border text-xs bg-emerald-50 border-emerald-200 text-emerald-800 font-semibold';
-        noticeEl.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 mr-1.5"></i> <strong>Horário Livre e Disponível:</strong> Data e horário disponíveis para agendamento!`;
+        noticeEl.className = 'alert alert-success py-2 small mb-3';
+        noticeEl.innerText = `Horário livre (respeita intervalo mínimo de ${MIN_APPOINTMENT_GAP_MINUTES} min).`;
     }
 }
 
@@ -847,35 +809,32 @@ function renderAppointments() {
     }
 
     if (listToRender.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-neutral-400">Nenhuma consulta agendada para o seu perfil.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">Nenhuma consulta encontrada.</td></tr>`;
         return;
     }
 
     listToRender.forEach(appt => {
         const isAdmin = currentUser && currentUser.role === 'admin';
         const isOwnerTutor = currentUser && currentUser.role === 'tutor' && appt.owner.toLowerCase() === currentUser.name.toLowerCase();
-        
+
         const tr = document.createElement('tr');
-        tr.className = 'hover:bg-neutral-50 transition';
         tr.innerHTML = `
-            <td class="p-4 font-semibold text-dark">${appt.animal}</td>
-            <td class="p-4 text-neutral-600">${appt.owner}</td>
-            <td class="p-4 text-neutral-600">${appt.service}</td>
-            <td class="p-4 text-neutral-600">${appt.date.replace('T', ' ')}</td>
-            <td class="p-4">
-                <span class="px-2.5 py-1 rounded-full text-xs font-semibold ${appt.status === 'Confirmado' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}">
-                    ${appt.status}
-                </span>
+            <td class="fw-semibold">${appt.animal}</td>
+            <td>${appt.owner}</td>
+            <td>${appt.service}</td>
+            <td>${appt.date.replace('T', ' ')}</td>
+            <td>
+                <span class="badge rounded-pill ${appt.status === 'Confirmado' ? 'text-bg-success' : 'text-bg-warning'}">${appt.status}</span>
             </td>
-            <td class="p-4 text-right">
+            <td class="text-end">
                 ${isAdmin ? `
-                    <button onclick="toggleApptStatus(${appt.id})" class="text-xs font-medium text-dark hover:underline mr-3">Alternar Status</button>
-                    <button onclick="openAppointmentModal(${appt.id})" class="text-xs font-medium text-blue-600 hover:underline mr-3">Reagendar</button>
-                    <button onclick="deleteAppt(${appt.id})" class="text-xs font-medium text-red-600 hover:underline">Cancelar</button>
+                    <button type="button" onclick="toggleApptStatus(${appt.id})" class="btn btn-sm btn-outline-dark rounded-pill me-1">Status</button>
+                    <button type="button" onclick="openAppointmentModal(${appt.id})" class="btn btn-sm btn-outline-primary rounded-pill me-1">Reagendar</button>
+                    <button type="button" onclick="deleteAppt(${appt.id})" class="btn btn-sm btn-outline-danger rounded-pill">Cancelar</button>
                 ` : isOwnerTutor ? `
-                    <button onclick="openAppointmentModal(${appt.id})" class="text-xs font-medium text-blue-600 hover:underline mr-3">Reagendar</button>
-                    <button onclick="deleteAppt(${appt.id})" class="text-xs font-medium text-red-600 hover:underline">Cancelar</button>
-                ` : `<span class="text-xs text-neutral-400">Agendado</span>`}
+                    <button type="button" onclick="openAppointmentModal(${appt.id})" class="btn btn-sm btn-outline-primary rounded-pill me-1">Reagendar</button>
+                    <button type="button" onclick="deleteAppt(${appt.id})" class="btn btn-sm btn-outline-danger rounded-pill">Cancelar</button>
+                ` : `<span class="text-muted">-</span>`}
             </td>
         `;
         tbody.appendChild(tr);
@@ -883,19 +842,60 @@ function renderAppointments() {
 }
 
 function openAppointmentModal(apptId = null) {
-    if (!currentUser || currentUser.role !== 'tutor') {
+    if (!currentUser || (currentUser.role !== 'tutor' && currentUser.role !== 'admin')) {
         openModal('login-select-modal');
-        showToast('Você precisa estar logado como Tutor para agendar ou reagendar consultas.');
+        return;
+    }
+
+    if (currentUser.role === 'admin' && !apptId) {
+        showToast('A Coordenação pode apenas reagendar ou cancelar consultas.');
         return;
     }
 
     const select = document.getElementById('appt-animal-select');
     select.innerHTML = '';
 
-    const myPets = animalsData.filter(a => a.owner.toLowerCase() === currentUser.name.toLowerCase());
+    document.getElementById('appt-id').value = '';
+    document.getElementById('appt-service').value = '';
+    document.getElementById('appt-date').value = '';
+    document.getElementById('availability-notice').classList.add('d-none');
 
+    if (apptId) {
+        const appt = appointmentsData.find(a => a.id === apptId);
+        if (!appt) return;
+
+        const poolPets = currentUser.role === 'admin'
+            ? animalsData
+            : animalsData.filter(a => a.owner.toLowerCase() === currentUser.name.toLowerCase());
+
+        poolPets.forEach(a => {
+            const opt = document.createElement('option');
+            opt.value = a.name;
+            opt.innerText = `${a.name} (${a.owner})`;
+            select.appendChild(opt);
+        });
+
+        if (!Array.from(select.options).some(o => o.value === appt.animal)) {
+            const opt = document.createElement('option');
+            opt.value = appt.animal;
+            opt.innerText = `${appt.animal} (${appt.owner})`;
+            select.appendChild(opt);
+        }
+
+        document.getElementById('appt-modal-title').innerText = 'Reagendar Consulta';
+        document.getElementById('appt-id').value = appt.id;
+        select.value = appt.animal;
+        document.getElementById('appt-owner').value = appt.owner;
+        document.getElementById('appt-service').value = appt.service;
+        document.getElementById('appt-date').value = appt.date;
+        checkAvailabilityNotice();
+        openModal('appointment-modal');
+        return;
+    }
+
+    const myPets = animalsData.filter(a => a.owner.toLowerCase() === currentUser.name.toLowerCase());
     if (myPets.length === 0) {
-        alert('Você ainda não tem nenhum pet cadastrado. Cadastre um pet primeiro!');
+        alert('Cadastre um pet antes de agendar uma consulta.');
         switchTab('tutor-area');
         return;
     }
@@ -903,34 +903,18 @@ function openAppointmentModal(apptId = null) {
     myPets.forEach(a => {
         const opt = document.createElement('option');
         opt.value = a.name;
-        opt.innerText = `${a.name} (Espécie: ${a.species} - Sangue: ${a.blood || 'N/I'})`;
+        opt.innerText = `${a.name} (${a.species})`;
         select.appendChild(opt);
     });
 
+    document.getElementById('appt-modal-title').innerText = 'Agendar Consulta';
     document.getElementById('appt-owner').value = currentUser.name;
-    document.getElementById('appt-id').value = '';
-    document.getElementById('appt-service').value = '';
-    document.getElementById('appt-date').value = '';
-    document.getElementById('availability-notice').classList.add('hidden');
-
-    if (apptId) {
-        const appt = appointmentsData.find(a => a.id === apptId);
-        if (appt) {
-            document.getElementById('appt-id').value = appt.id;
-            select.value = appt.animal;
-            document.getElementById('appt-service').value = appt.service;
-            document.getElementById('appt-date').value = appt.date;
-            checkAvailabilityNotice();
-        }
-    }
-
     openModal('appointment-modal');
 }
 
 function saveAppointment(e) {
     e.preventDefault();
-    if (!currentUser || currentUser.role !== 'tutor') {
-        showToast('Acesso negado.');
+    if (!currentUser || (currentUser.role !== 'tutor' && currentUser.role !== 'admin')) {
         return;
     }
 
@@ -939,14 +923,20 @@ function saveAppointment(e) {
     const serviceVal = document.getElementById('appt-service').value;
     const dateVal = document.getElementById('appt-date').value;
 
-    const selectedDate = new Date(dateVal);
-    if (selectedDate.getDay() === 0 || selectedDate.getDay() === 6) {
-        alert('Atenção: Não há atendimentos aos finais de semana. Por favor escolha um dia útil!');
+    if (currentUser.role === 'admin' && !id) {
+        showToast('A Coordenação pode apenas reagendar consultas existentes.');
         return;
     }
 
-    if (checkAppointmentConflict(dateVal, id)) {
-        alert('Erro ao Agendar: Esta data e horário já estão ocupados por outra consulta! Escolha um horário vago.');
+    const selectedDate = new Date(dateVal);
+    if (selectedDate.getDay() === 0 || selectedDate.getDay() === 6) {
+        alert('Não há atendimentos aos finais de semana.');
+        return;
+    }
+
+    const conflict = getConflictingAppointment(dateVal, id);
+    if (conflict) {
+        alert(`Conflito de horário! Já existe consulta às ${conflict.date.replace('T', ' ')}. Escolha um horário com pelo menos ${MIN_APPOINTMENT_GAP_MINUTES} minutos de diferença.`);
         return;
     }
 
@@ -987,10 +977,24 @@ function toggleApptStatus(id) {
 }
 
 function deleteAppt(id) {
+    const appt = appointmentsData.find(a => a.id === id);
+    if (!appt) return;
+
+    const cancelledByAdmin = currentUser && currentUser.role === 'admin';
+    tutorNotifications.push({
+        id: tutorNotifications.length > 0 ? Math.max(...tutorNotifications.map(n => n.id)) + 1 : 1,
+        tutorName: appt.owner,
+        animal: appt.animal,
+        service: appt.service,
+        date: appt.date,
+        cancelledBy: cancelledByAdmin ? 'Coordenação / Veterinário' : currentUser ? currentUser.name : 'Sistema',
+        createdAt: new Date().toLocaleString('pt-BR')
+    });
+
     appointmentsData = appointmentsData.filter(a => a.id !== id);
     saveData();
     renderAppointments();
-    showToast('Consulta cancelada com sucesso.');
+    showToast(`Consulta cancelada. Notificação enviada ao tutor ${appt.owner}.`);
 }
 
 function renderClinics() {
@@ -1000,42 +1004,37 @@ function renderClinics() {
 
     clinicsData.forEach(clinic => {
         const isAdmin = currentUser && currentUser.role === 'admin';
-
-        const card = document.createElement('div');
-        card.className = 'bg-white border border-border rounded-2xl p-6 shadow-sm hover:shadow-md transition flex flex-col justify-between';
-        card.innerHTML = `
-            <div>
-                <div class="flex items-center justify-between mb-4">
-                    <span class="text-xs font-semibold bg-neutral-100 px-3 py-1 rounded-full text-neutral-600 uppercase">Campina Grande - PB</span>
-                    <span class="text-xs text-emerald-600 font-semibold"><i class="fa-solid fa-circle text-[8px] mr-1"></i> ${clinic.status}</span>
+        const col = document.createElement('div');
+        col.className = 'col-md-6';
+        col.innerHTML = `
+            <div class="card h-100 bg-white">
+                <div class="card-body small">
+                    <h5 class="card-title fw-bold mb-1">${clinic.name}</h5>
+                    <p class="${isAdmin ? 'mb-2' : 'mb-0'} text-muted">${clinic.address || 'Campina Grande - PB'}</p>
+                    ${isAdmin ? `
+                        <p class="mb-1"><strong>Status:</strong> ${clinic.status || 'Ativo'}</p>
+                        <p class="mb-1"><strong>CRMV/CNPJ:</strong> ${clinic.crmv || 'CRMV-PB'} · ${clinic.cnpj || 'Cadastrado'}</p>
+                        <p class="mb-1"><strong>Telefone:</strong> ${clinic.phone || '(83) 3300-0000'}</p>
+                        <p class="mb-0"><strong>E-mail:</strong> ${clinic.email}</p>
+                    ` : ''}
                 </div>
-                <h3 class="text-xl font-bold mb-2">${clinic.name}</h3>
-                <p class="text-neutral-500 text-sm mb-4">Parceiro credenciado com requisições e transferências integradas.</p>
-                <div class="space-y-2 text-xs text-neutral-600 mb-4">
-                    <p><i class="fa-solid fa-id-card w-5 text-neutral-400"></i> ${clinic.crmv || 'CRMV-PB'} · CNPJ: ${clinic.cnpj || 'Cadastrado'}</p>
-                    <p><i class="fa-solid fa-location-dot w-5 text-neutral-400"></i> ${clinic.address || 'Campina Grande - PB'}</p>
-                    <p><i class="fa-solid fa-phone w-5 text-neutral-400"></i> ${clinic.phone || '(83) 3300-0000'}</p>
-                    <p><i class="fa-solid fa-envelope w-5 text-neutral-400"></i> ${clinic.email}</p>
-                </div>
+                ${isAdmin ? `
+                    <div class="card-footer bg-white text-end border-0 pt-0 pb-3 px-3">
+                        <button type="button" onclick="deleteClinic(${clinic.id})" class="btn btn-sm btn-outline-danger rounded-pill">Excluir</button>
+                    </div>
+                ` : ''}
             </div>
-            ${isAdmin ? `
-                <div class="pt-4 border-t border-border flex justify-end">
-                    <button onclick="deleteClinic(${clinic.id})" class="px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition">
-                        <i class="fa-solid fa-trash mr-1"></i> Excluir Clínica Parceira
-                    </button>
-                </div>
-            ` : ''}
         `;
-        grid.appendChild(card);
+        grid.appendChild(col);
     });
 }
 
 function deleteClinic(id) {
-    if (confirm('Deseja realmente remover esta clínica parceira da rede?')) {
+    if (confirm('Deseja realmente remover esta clínica parceira?')) {
         clinicsData = clinicsData.filter(c => c.id !== id);
         saveData();
         renderClinics();
-        showToast('Clínica parceira removida com sucesso.');
+        showToast('Clínica removida.');
     }
 }
 
@@ -1047,7 +1046,7 @@ function openClinicContactModalWithAnimal(animalName) {
 
 function openClinicContactModal() {
     if (!currentUser || currentUser.role !== 'clinic') {
-        showToast('Acesso restrito a clínicas parceiras logadas.');
+        showToast('Acesso restrito a clínicas parceiras.');
         return;
     }
 
@@ -1055,12 +1054,12 @@ function openClinicContactModal() {
     select.innerHTML = '';
 
     if (animalsData.length === 0) {
-        select.innerHTML = `<option value="">Nenhum animal cadastrado no sistema</option>`;
+        select.innerHTML = `<option value="">Nenhum animal cadastrado</option>`;
     } else {
         animalsData.forEach(a => {
             const opt = document.createElement('option');
             opt.value = a.name;
-            opt.innerText = `${a.name} (Espécie: ${a.species} - Sangue: ${a.blood || 'N/I'})`;
+            opt.innerText = `${a.name} (${a.species} - ${a.blood || 'N/I'})`;
             select.appendChild(opt);
         });
     }
@@ -1076,21 +1075,20 @@ function submitClinicContact(e) {
     const subject = document.getElementById('cc-subject').value;
     const message = document.getElementById('cc-message').value;
 
-    const newContact = {
+    clinicContacts.push({
         id: clinicContacts.length > 0 ? Math.max(...clinicContacts.map(c => c.id)) + 1 : 1,
         clinicName: currentUser.name,
         animal: animalAssociated,
-        subject: subject,
-        message: `Animal Associado: ${animalAssociated} | ${message}`,
+        subject,
+        message: `Animal: ${animalAssociated} | ${message}`,
         date: new Date().toISOString().slice(0, 16).replace('T', ' '),
-        status: 'Requisição de Doador Enviada à Coordenação'
-    };
+        status: 'Enviada à Coordenação'
+    });
 
-    clinicContacts.push(newContact);
     saveData();
     renderClinicContactsList();
     closeModal('clinic-contact-modal');
-    showToast('Requisição de doador associada ao animal enviada com sucesso!');
+    showToast('Requisição enviada!');
 }
 
 function renderClinicContactsList() {
@@ -1099,25 +1097,21 @@ function renderClinicContactsList() {
     listContainer.innerHTML = '';
 
     const myContacts = clinicContacts.filter(c => currentUser && c.clinicName.toLowerCase() === currentUser.name.toLowerCase());
-
     if (myContacts.length === 0) {
-        listContainer.innerHTML = `<p class="text-xs text-neutral-400">Nenhuma requisição de doador enviada até o momento.</p>`;
+        listContainer.innerHTML = `<p class="text-muted small mb-0">Nenhuma requisição enviada.</p>`;
         return;
     }
 
-    // Filtra para exibir apenas as últimas 5 requisições da mais recente para a mais antiga
-    const recentContacts = myContacts.slice(-5).reverse();
-
-    recentContacts.forEach(item => {
+    myContacts.slice(-5).reverse().forEach(item => {
         const div = document.createElement('div');
-        div.className = 'bg-neutral-800 p-4 rounded-xl border border-neutral-700 text-xs space-y-1';
+        div.className = 'border rounded-3 p-3 bg-light small';
         div.innerHTML = `
-            <div class="flex justify-between font-bold text-white">
+            <div class="d-flex justify-content-between fw-bold">
                 <span>${item.subject}</span>
-                <span class="text-emerald-400">${item.status}</span>
+                <span class="text-success">${item.status}</span>
             </div>
-            <p class="text-neutral-300">${item.message}</p>
-            <span class="text-[10px] text-neutral-500 block pt-1">Enviado em: ${item.date}</span>
+            <div>${item.message}</div>
+            <small class="text-muted">${item.date}</small>
         `;
         listContainer.appendChild(div);
     });
@@ -1129,21 +1123,24 @@ function showToast(message) {
 
     const toast = document.createElement('div');
     toast.id = 'toast-notification';
-    toast.className = 'fixed bottom-6 right-6 bg-dark text-white px-6 py-3.5 rounded-2xl shadow-2xl text-sm font-medium z-50 flex items-center space-x-3 fade-in';
-    toast.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400 text-lg"></i><span>${message}</span>`;
+    toast.className = 'toast show position-fixed bottom-0 end-0 m-3 text-bg-dark border-0 rounded-4';
+    toast.setAttribute('role', 'alert');
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">${message}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
     document.body.appendChild(toast);
     setTimeout(() => {
-        if (toast.parentElement) {
-            toast.style.opacity = '0';
-            toast.style.transition = 'opacity 0.3s ease';
-            setTimeout(() => toast.remove(), 300);
-        }
+        if (toast.parentElement) toast.remove();
     }, 3500);
 }
 
 window.onload = function() {
+    initPlaceholdersHideOnFocus();
     updateAuthUI();
     renderAnimals();
     renderAppointments();
     renderClinics();
-}
+};
