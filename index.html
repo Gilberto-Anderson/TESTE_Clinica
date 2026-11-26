@@ -492,7 +492,7 @@
                         <label class="form-label small fw-semibold">E-mail</label>
                         <input type="email" id="signup-email" required class="form-control">
                     </div>
-                    <div class="row g-3 mb-4">
+                    <div class="row g-3 mb-2">
                         <div class="col-sm-6">
                             <label class="form-label small fw-semibold">Senha</label>
                             <input type="password" id="signup-password" required class="form-control">
@@ -501,6 +501,9 @@
                             <label class="form-label small fw-semibold">Confirmar Senha</label>
                             <input type="password" id="signup-confirm-password" required class="form-control">
                         </div>
+                    </div>
+                    <div class="text-muted small mb-4" style="font-size: 0.78rem;">
+                        Mínimo de 8 caracteres, 1 letra maiúscula e 1 caractere especial.
                     </div>
                     <button type="submit" class="btn btn-navy w-100 rounded-pill py-2 fw-semibold">Concluir Cadastro</button>
                 </form>
@@ -528,9 +531,18 @@
                         <label class="form-label small fw-semibold">E-mail Institucional</label>
                         <input type="email" id="admin-signup-email" required class="form-control">
                     </div>
-                    <div class="mb-4">
-                        <label class="form-label small fw-semibold">Senha</label>
-                        <input type="password" id="admin-signup-password" required class="form-control">
+                    <div class="row g-3 mb-2">
+                        <div class="col-sm-6">
+                            <label class="form-label small fw-semibold">Senha</label>
+                            <input type="password" id="admin-signup-password" required class="form-control">
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label small fw-semibold">Confirmar Senha</label>
+                            <input type="password" id="admin-signup-confirm-password" required class="form-control">
+                        </div>
+                    </div>
+                    <div class="text-muted small mb-4" style="font-size: 0.78rem;">
+                        Mínimo de 8 caracteres, 1 letra maiúscula e 1 caractere especial.
                     </div>
                     <button type="submit" class="btn btn-navy w-100 rounded-pill py-2 fw-semibold">Concluir Cadastro</button>
                 </form>
@@ -574,15 +586,22 @@
                             <input type="text" id="cs-phone" required class="form-control">
                         </div>
                     </div>
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-7">
-                            <label class="form-label small fw-semibold">Endereço</label>
-                            <input type="text" id="cs-address" required class="form-control">
-                        </div>
-                        <div class="col-md-5">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Endereço</label>
+                        <input type="text" id="cs-address" required class="form-control">
+                    </div>
+                    <div class="row g-3 mb-2">
+                        <div class="col-md-6">
                             <label class="form-label small fw-semibold">Senha</label>
                             <input type="password" id="cs-password" required class="form-control">
                         </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Confirmar Senha</label>
+                            <input type="password" id="cs-confirm-password" required class="form-control">
+                        </div>
+                    </div>
+                    <div class="text-muted small mb-4" style="font-size: 0.78rem;">
+                        Mínimo de 8 caracteres, 1 letra maiúscula e 1 caractere especial.
                     </div>
                     <button type="submit" class="btn btn-navy w-100 rounded-pill py-2 fw-semibold">Concluir Cadastro</button>
                 </form>
