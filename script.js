@@ -64,6 +64,29 @@ let tutorNotifications = JSON.parse(localStorage.getItem('vet_tutor_notification
 const modalInstances = {};
 const MIN_APPOINTMENT_GAP_MINUTES = 15;
 
+function validateStrongPassword(password, confirmPassword = null) {
+    const issues = [];
+    if (!password || password.length < 8) {
+        issues.push('pelo menos 8 caracteres');
+    }
+    if (!/[A-ZÀ-Ü]/.test(password)) {
+        issues.push('pelo menos 1 letra maiúscula');
+    }
+    if (!/[^A-Za-z0-9\s]/.test(password)) {
+        issues.push('pelo menos 1 caractere especial');
+    }
+
+    if (issues.length > 0) {
+        return `A senha deve conter ${issues.join(', ')}.`;
+    }
+
+    if (confirmPassword !== null && password !== confirmPassword) {
+        return 'As senhas não coincidem!';
+    }
+
+    return null;
+}
+
 function initPlaceholdersHideOnFocus() {
     document.querySelectorAll('input[placeholder], textarea[placeholder]').forEach(el => {
         if (!el.dataset.originalPlaceholder) {
@@ -262,8 +285,9 @@ function registerTutorDirect(e) {
     const password = document.getElementById('signup-password').value;
     const confirmPassword = document.getElementById('signup-confirm-password').value;
 
-    if (password !== confirmPassword) {
-        alert('As senhas não coincidem!');
+    const passwordError = validateStrongPassword(password, confirmPassword);
+    if (passwordError) {
+        alert(passwordError);
         return;
     }
 
@@ -279,9 +303,17 @@ function registerAdminDirect(e) {
     e.preventDefault();
     const name = document.getElementById('admin-signup-name').value.trim();
     const email = document.getElementById('admin-signup-email').value.trim();
+    const password = document.getElementById('admin-signup-password').value;
+    const confirmPassword = document.getElementById('admin-signup-confirm-password').value;
 
     if (!email.toLowerCase().endsWith('@sempreuninassau.com.br')) {
         alert('Informe um e-mail institucional válido para concluir o cadastro.');
+        return;
+    }
+
+    const passwordError = validateStrongPassword(password, confirmPassword);
+    if (passwordError) {
+        alert(passwordError);
         return;
     }
 
@@ -301,6 +333,14 @@ function registerClinicDirect(e) {
     const email = document.getElementById('cs-email').value.trim();
     const phone = document.getElementById('cs-phone').value.trim();
     const address = document.getElementById('cs-address').value.trim();
+    const password = document.getElementById('cs-password').value;
+    const confirmPassword = document.getElementById('cs-confirm-password').value;
+
+    const passwordError = validateStrongPassword(password, confirmPassword);
+    if (passwordError) {
+        alert(passwordError);
+        return;
+    }
 
     const newClinic = {
         id: clinicsData.length > 0 ? Math.max(...clinicsData.map(c => c.id)) + 1 : 1,
@@ -829,6 +869,7 @@ function renderAppointments() {
             <td class="text-end">
                 ${isAdmin ? `
                     <button type="button" onclick="toggleApptStatus(${appt.id})" class="btn btn-sm btn-outline-dark rounded-pill me-1">Status</button>
+                    <button type="button" onclick="openAppointmentModal(${appt.id})" class="btn btn-sm btn-outline-primary rounded-pill me-1">Reagendar</button>
                     <button type="button" onclick="deleteAppt(${appt.id})" class="btn btn-sm btn-outline-danger rounded-pill">Cancelar</button>
                 ` : isOwnerTutor ? `
                     <button type="button" onclick="openAppointmentModal(${appt.id})" class="btn btn-sm btn-outline-primary rounded-pill me-1">Reagendar</button>
