@@ -829,7 +829,6 @@ function renderAppointments() {
             <td class="text-end">
                 ${isAdmin ? `
                     <button type="button" onclick="toggleApptStatus(${appt.id})" class="btn btn-sm btn-outline-dark rounded-pill me-1">Status</button>
-                    <button type="button" onclick="openAppointmentModal(${appt.id})" class="btn btn-sm btn-outline-primary rounded-pill me-1">Reagendar</button>
                     <button type="button" onclick="deleteAppt(${appt.id})" class="btn btn-sm btn-outline-danger rounded-pill">Cancelar</button>
                 ` : isOwnerTutor ? `
                     <button type="button" onclick="openAppointmentModal(${appt.id})" class="btn btn-sm btn-outline-primary rounded-pill me-1">Reagendar</button>
